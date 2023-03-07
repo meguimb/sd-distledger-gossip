@@ -9,7 +9,6 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 import io.grpc.stub.StreamObserver;
-import io.grpc.Status;
 
 public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBase {
 

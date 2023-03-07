@@ -8,11 +8,6 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.GossipReques
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.GossipResponse;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateResponse;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.*;
-import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger;
-import pt.ulisboa.tecnico.distledger.contract.user.*;
-import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc.UserServiceImplBase;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import io.grpc.Status;
