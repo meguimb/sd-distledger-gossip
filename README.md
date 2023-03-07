@@ -16,7 +16,7 @@ code dependency management, to ensure your code runs using the correct component
 
 | Number | Name              | User                              | Email                                         |
 |--------|-------------------|-----------------------------------|-----------------------------------------------|
-| 99130  | Vasco Brito       | <https://github.com/NoltenKogath> | <mailto:vacobrito01@tecnico.ulisboa.pt>       |
+| 99130  | Vasco Brito       | <https://github.com/NoltenKogath> | <mailto:vascobrito01@tecnico.ulisboa.pt>       |
 | 99270  | Margarida Bezerra | <https://github.com/meguimb>      | <mailto:margarida.bezerra@tecnico.ulisboa.pt> |
 | 99272  | Sofia Pinho       | <https://github.com/SofiaMPinho>  | <mailto:sofia.pinho@tecnico.ulisboa.pt>       |
 
