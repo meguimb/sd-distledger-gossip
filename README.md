@@ -4,7 +4,7 @@ Distributed Systems Project 2022/2023
 
 ## Authors
 
-**Group G19**
+**Group A19**
 
 ### Code Identification
 
