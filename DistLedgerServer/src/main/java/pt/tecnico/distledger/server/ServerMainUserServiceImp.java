@@ -73,7 +73,20 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
 
     @Override
     public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> responseObserver) {
-      // TODO
+      String from = request.getAccountFrom();
+      String to = request.getAccountTo();
+      int amount = request.getAmount();
+      if (from == null || to == null){
+        responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to transfer.").asRuntimeException());
+      }
+      else{
+        if (serverState.transferTo(from, to, amount) == -1){
+          responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Operation.").asRuntimeException());
+        }
+        TransferToResponse response = TransferToResponse.newBuilder().getDefaultInstanceForType();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+      }
     }
 
 }
