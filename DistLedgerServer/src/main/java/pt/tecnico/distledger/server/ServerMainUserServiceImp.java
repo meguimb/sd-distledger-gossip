@@ -43,12 +43,32 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
 
     @Override
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
-      // TODO
+      String id = request.getUserId();
+      if (id == null){
+        responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't create an account with this id.").asRuntimeException());
+      }
+      else{
+        serverState.createAddAccount(id);
+        CreateAccountResponse response = CreateAccountResponse.newBuilder().getDefaultInstanceForType();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+      }
     }
 
     @Override
     public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
-      // TODO
+      String id = request.getUserId();
+      if (id == null){
+        responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to delete account.").asRuntimeException());
+      }
+      else{
+        if (serverState.deleteAccount(id) == -1){
+          responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't delete an account that doesn't exist.").asRuntimeException());
+        }
+        DeleteAccountResponse response = DeleteAccountResponse.newBuilder().getDefaultInstanceForType();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+      }
     }
 
     @Override
