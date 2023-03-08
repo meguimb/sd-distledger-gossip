@@ -19,7 +19,7 @@ import io.grpc.Status;
 import java.util.*;
 
 public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImplBase {
-  private ServerState state;
+  private ServerState state = new ServerState();
 
   public AdminServiceImp(ServerState s) {
     this.state = s;
