@@ -1,6 +1,18 @@
 package pt.tecnico.distledger.server;
-public class ServerMain {
 
+public class ServerMain {
+	/*
+	 * A lista de operações de escrita aceites, também chamada ledger. Inclui operações 
+	 * de 3 tipos: criar conta, remover conta, transferir moeda entre contas. Inicialmente 
+	 * está vazia e vai crescendo à medida que lhe são acrescentadas novas operações. 
+	 * Um mapa de contas com informação sobre as contas ativas neste momento e o respetivo 
+	 * saldo. Esta estrutura descreve o estado que resulta da execução ordenada de todas as 
+	 * operações atualmente na ledger e que, na 3ª parte, já estão estáveis (stable updates, 
+	 * segundo a terminologia do gossip architecture, o modelo de replicação que vamos usar 
+	 * nessa parte do projeto). Sempre que uma nova operação é adicionada à ledger e estabiliza
+	 *  (novamente, isto só é relevante na 3ª parte), o estado do mapa de contas deve ser 
+	 * atualizado para refletir essa operação.
+	 */
     public static void main(String[] args) {
 
         // Nesta fase o serviço é prestado por um único servidor, que aceita 
