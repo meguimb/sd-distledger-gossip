@@ -84,4 +84,10 @@ public class ServerState {
         return 0;
     }
 
+    public int transferTo(String from_id, String to_id, int amount){
+        Account from = getAccountsMap().get(from_id);
+        Account to = getAccountsMap().get(to_id);
+        return from.transferTo(to, amount);
+    }
+
 }

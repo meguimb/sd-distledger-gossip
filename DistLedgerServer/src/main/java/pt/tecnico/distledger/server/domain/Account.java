@@ -48,7 +48,7 @@ public class Account {
             u.deposit(amount);
             this.withdraw(amount);
         }
-        return 1;
+        return 0;
 
     }
 
