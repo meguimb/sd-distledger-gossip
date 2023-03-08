@@ -12,10 +12,12 @@ public class ServerState {
 
 	private List<Operation> ledger;
 	private Map<String, Account> accountsMap;
+    private Boolean is_active;
 
     public ServerState() {
         this.ledger = new ArrayList<>();
         this.accountsMap = new HashMap<String, Account>();
+        is_active = true;
     }
     /* TODO: Here should be declared all the server state attributes
          as well as the methods to access and interact with the state. */
@@ -46,6 +48,23 @@ public class ServerState {
 
     public void addOperation(Operation o){
         ledger.add(o);
+    }
+    
+    // activate -- coloca o servidor em modo ATIVO (este é o comportamento por omissão), em que responde a todos os pedidos
+    public void activate(){
+        is_active = true;
+    }
+
+    public void deactivate(){
+        is_active = false;
+    }
+
+    public List<Operation> getLedgerState(){
+        return getLedger();
+    }
+
+    public void gossip(){
+        // TODO - fase 3
     }
 
 }
