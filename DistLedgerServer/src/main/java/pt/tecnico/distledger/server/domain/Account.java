@@ -1,15 +1,15 @@
-package pt.tecnico.distledger.server.domain.operation;
+package pt.tecnico.distledger.server.domain;
 
-public class User {
+public class Account {
     private String name;
     private int balance;
 
-    public User(String name){
+    public Account(String name){
         setName(name);
         setBalance(0);
     }
 
-    public Boolean equal(User u){
+    public Boolean equal(Account u){
         return this.getName() == u.getName();
     }
 
@@ -37,7 +37,7 @@ public class User {
         setBalance(getBalance() - amount);
     }
 
-    public int transferTo(User u, int amount){
+    public int transferTo(Account u, int amount){
         if (this.equals(u)){
             return -1;
         }
