@@ -80,7 +80,7 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
       convertedOps.add(newOp);
     }
 
-    DistLedgerCommonDefinitions.LedgerState ledgerState = DistLedgerCommonDefinitions.LedgerState.newBuilder().addAllOperations(convertedOps).build();
+    DistLedgerCommonDefinitions.LedgerState ledgerState = DistLedgerCommonDefinitions.LedgerState.newBuilder().addAllLedger(convertedOps).build();
     getLedgerStateResponse response = getLedgerStateResponse.newBuilder().setLedgerState(ledgerState).build();
 
     responseObserver.onNext(response);
