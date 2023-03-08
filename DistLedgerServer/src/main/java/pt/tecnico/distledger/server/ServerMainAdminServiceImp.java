@@ -12,6 +12,9 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerSta
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
 import pt.tecnico.distledger.server.domain.operation.Operation;
+import pt.tecnico.distledger.server.domain.operation.CreateOp;
+import pt.tecnico.distledger.server.domain.operation.DeleteOp;
+import pt.tecnico.distledger.server.domain.operation.TransferOp;
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 import io.grpc.Status;
@@ -21,7 +24,7 @@ import java.util.*;
 public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImplBase {
   private ServerState state = new ServerState();
 
-  public AdminServiceImp(ServerState s) {
+  public ServerMainAdminServiceImp(ServerState s) {
     this.state = s;
   }
 
