@@ -38,8 +38,12 @@ public class ServerState {
         return accountsMap;
     }
 
-    public void addAccount(Account a){
-        accountsMap.put(a.getName(), a);
+    public int addAccount(Account a){
+        // if returned value of put is different than null is because key already exists
+        if (accountsMap.put(a.getName(), a) != null){
+            return -1;
+        }
+        return 0;
     }
 
     public List<Operation> getLedger(){
@@ -65,6 +69,19 @@ public class ServerState {
 
     public void gossip(){
         // TODO - fase 3
+    }
+
+    public int createAddAccount(String id){
+        Account newAccount = new Account(id);
+        // TODO: catch errors
+        return addAccount(newAccount);
+    }
+
+    public int deleteAccount(String id){
+        if (accountsMap.remove(id) == null){
+            return -1;
+        }
+        return 0;
     }
 
 }
