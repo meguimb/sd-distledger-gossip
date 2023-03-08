@@ -1,4 +1,5 @@
 package pt.tecnico.distledger.server;
+
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
@@ -9,12 +10,35 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 import io.grpc.stub.StreamObserver;
+import pt.tecnico.distledger.server.domain.Account;
+import pt.tecnico.distledger.server.domain.ServerState;
+import pt.tecnico.distledger.server.ServerMain;
+import pt.tecnico.distledger.server.domain.ServerState;
+import static io.grpc.Status.INVALID_ARGUMENT;
+import io.grpc.Status;
 
 public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBase {
 
+    ServerState serverState = new ServerState();
     @Override
     public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
-      // TODO
+      String id; int value;
+      
+      id = request.getUserId();
+      if (id == null){
+        responseObserver.onError(INVALID_ARGUMENT.withDescription("User id is invalid.").asRuntimeException());
+      }
+      else{
+        value = serverState.balance(id);
+        if (value == -1){
+          responseObserver.onError(INVALID_ARGUMENT.withDescription("Account for this user doesn't exist.").asRuntimeException());
+        }
+        else{
+          BalanceResponse response = BalanceResponse.newBuilder().setValue(value).build();
+          responseObserver.onNext(response);
+          responseObserver.onCompleted();
+        }
+      }
     }
 
     @Override
