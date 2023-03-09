@@ -1,6 +1,5 @@
 package pt.tecnico.distledger.userclient;
 
-
 import pt.tecnico.distledger.userclient.grpc.UserService;
 
 public class UserClientMain {
@@ -24,8 +23,9 @@ public class UserClientMain {
         final String host = args[0];
         final int port = Integer.parseInt(args[1]);
 
-        CommandParser parser = new CommandParser(new UserService(host, port));
+        UserService userService = new UserService(host, port);
+        CommandParser parser = new CommandParser(userService);
         parser.parseInput();
-
+        userService.close();
     }
 }

@@ -70,5 +70,7 @@ public class UserService {
         }
     }
 
-
+    public void close() {
+        channel.shutdown();
+    }
 }
