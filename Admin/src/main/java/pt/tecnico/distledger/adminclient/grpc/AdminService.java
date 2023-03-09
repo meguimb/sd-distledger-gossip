@@ -27,14 +27,9 @@ public class AdminService {
 
     public static void activate(String server) {
         try {
-            //final ManagedChannel channel = ManagedChannelBuilder.forTarget(server).usePlaintext().build();
-            //AdminServiceGrpc.AdminServiceBlockingStub stub = AdminServiceGrpc.newBlockingStub(channel);
-
             ActivateRequest activateRequest = ActivateRequest.getDefaultInstance();
             ActivateResponse activateResponse = blockingStub.activate(activateRequest);
             System.out.println("OK\n" + activateResponse.toString());
-
-            //channel.shutdown();
         }
         catch(StatusRuntimeException e) {
             System.out.println("ERROR\n" + e.getStatus().getDescription());
@@ -61,5 +56,9 @@ public class AdminService {
         catch(StatusRuntimeException e) {
             System.out.println("ERROR\n" + e.getStatus().getDescription());
         }
+    }
+
+    public void close() {
+        channel.shutdown();
     }
 }
