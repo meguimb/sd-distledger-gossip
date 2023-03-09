@@ -10,38 +10,23 @@ import pt.tecnico.distledger.server.domain.Account;
 
 public class ServerState {
 
-    /*
-	 * A lista de operações de escrita aceites, também chamada ledger. Inclui operações 
-	 * de 3 tipos: criar conta, remover conta, transferir moeda entre contas. Inicialmente 
-	 * está vazia e vai crescendo à medida que lhe são acrescentadas novas operações. 
-	 * Um mapa de contas com informação sobre as contas ativas neste momento e o respetivo 
-	 * saldo. Esta estrutura descreve o estado que resulta da execução ordenada de todas as 
-	 * operações atualmente na ledger e que, na 3ª parte, já estão estáveis (stable updates, 
-	 * segundo a terminologia do gossip architecture, o modelo de replicação que vamos usar 
-	 * nessa parte do projeto). Sempre que uma nova operação é adicionada à ledger e estabiliza
-	 *  (novamente, isto só é relevante na 3ª parte), o estado do mapa de contas deve ser 
-	 * atualizado para refletir essa operação.
-	 */
-
 	private List<Operation> ledger;
 	private Map<String, Account> accountsMap;
     private Boolean is_active;
 
     public ServerState() {
-        // initialize server attributes and lists
         this.ledger = new ArrayList<>();
         this.accountsMap = new HashMap<String, Account>();
         is_active = true;
-        // create broker account
-        Account broker = new Account("broker");
-        broker.setBalance(1000);
-        accountsMap.put("broker", broker);
     }
     /* TODO: Here should be declared all the server state attributes
          as well as the methods to access and interact with the state. */
 
     public int balance(String id) {
         Account account;
+
+        if(is_active == false)
+            return -2;
         // grab Account by String idS
         account = accountsMap.get(id);
         // check for errors
@@ -90,12 +75,18 @@ public class ServerState {
     }
 
     public int createAddAccount(String id){
+        if(is_active == false)
+            return -1; 
+
         Account newAccount = new Account(id);
         // TODO: catch errors
         return addAccount(newAccount);
     }
 
     public int deleteAccount(String id){
+        if(is_active == false)
+            return -2; 
+            
         if (accountsMap.remove(id) == null){
             return -1;
         }
