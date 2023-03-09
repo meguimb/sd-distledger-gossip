@@ -1,5 +1,13 @@
 package pt.tecnico.distledger.server;
 
+import pt.tecnico.distledger.server.domain.ServerState;
+import pt.tecnico.distledger.server.ServerMainUserServiceImp;
+import io.grpc.BindableService;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
+import pt.tecnico.distledger.server.ServerMainAdminServiceImp;
+import java.io.IOException;
+
 public class ServerMain {
 	/*
 	 * A lista de operações de escrita aceites, também chamada ledger. Inclui operações 
@@ -13,7 +21,7 @@ public class ServerMain {
 	 *  (novamente, isto só é relevante na 3ª parte), o estado do mapa de contas deve ser 
 	 * atualizado para refletir essa operação.
 	 */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InterruptedException {
 
         // Nesta fase o serviço é prestado por um único servidor, que aceita 
         // pedidos num endereço/porto fixo que é conhecido de antemão por todos os clientes.
@@ -48,6 +56,14 @@ public class ServerMain {
 		}
 
 		final int port = Integer.parseInt(args[0]);
+		ServerState serverState = new ServerState();
+		final BindableService impUser = new ServerMainUserServiceImp(serverState);
+		final BindableService impAdmin = new ServerMainAdminServiceImp(serverState);
+		Server server = ServerBuilder.forPort(port).addService(impUser).addService(impAdmin).build();
+		server.start();
+		System.out.println("Server started");
+		server.awaitTermination();
+
         /* 
 		final BindableService impl = new TTTServiceImpl();
 
