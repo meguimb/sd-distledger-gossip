@@ -18,8 +18,12 @@ import static io.grpc.Status.INVALID_ARGUMENT;
 import io.grpc.Status;
 
 public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBase {
+  private ServerState serverState;
 
-    ServerState serverState = new ServerState();
+  public ServerMainUserServiceImp(ServerState s) {
+    this.serverState = s;
+  }
+
     @Override
     public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
       String id; int value;
