@@ -18,6 +18,10 @@ public class ServerState {
         this.ledger = new ArrayList<>();
         this.accountsMap = new HashMap<String, Account>();
         is_active = true;
+        // add broker user
+        Account broker = new Account("broker");
+        broker.setBalance(1000);
+        addAccount(broker);
     }
     /* TODO: Here should be declared all the server state attributes
          as well as the methods to access and interact with the state. */
@@ -80,7 +84,11 @@ public class ServerState {
 
         Account newAccount = new Account(id);
         // TODO: catch errors
-        return addAccount(newAccount);
+        if (addAccount(newAccount) != -1){
+            addOperation(new CreateOp(id));
+            return 0;
+        }
+        return -1;
     }
 
     public int deleteAccount(String id){
@@ -90,13 +98,18 @@ public class ServerState {
         if (accountsMap.remove(id) == null){
             return -1;
         }
+        addOperation(new DeleteOp(id));
         return 0;
     }
 
     public int transferTo(String from_id, String to_id, int amount){
         Account from = getAccountsMap().get(from_id);
         Account to = getAccountsMap().get(to_id);
-        return from.transferTo(to, amount);
+        if (from.transferTo(to, amount) != -1){
+            addOperation(new TransferOp(from.getName(), to.getName(), amount));
+            return 0;
+        }
+        return -1;
     }
 
 }
