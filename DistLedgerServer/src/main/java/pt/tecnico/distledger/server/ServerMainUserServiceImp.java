@@ -15,6 +15,7 @@ import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.ServerMain;
 import pt.tecnico.distledger.server.domain.ServerState;
 import static io.grpc.Status.INVALID_ARGUMENT;
+import static io.grpc.Status.UNAVAILABLE;
 import io.grpc.Status;
 
 public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBase {
@@ -34,7 +35,10 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
       else{
         value = serverState.balance(id);
-        if (value == -1){
+        if (value == -2){
+          responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
+        }
+        else if (value == -1){
           responseObserver.onError(INVALID_ARGUMENT.withDescription("Account for this user doesn't exist.").asRuntimeException());
         }
         else{
@@ -52,7 +56,8 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't create an account with this id.").asRuntimeException());
       }
       else{
-        serverState.createAddAccount(id);
+        if(serverState.createAddAccount(id) == -1)
+          responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
         CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
@@ -66,8 +71,12 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to delete account.").asRuntimeException());
       }
       else{
-        if (serverState.deleteAccount(id) == -1){
+        int result = serverState.deleteAccount(id);
+        if (result == -1){
           responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't delete an account that doesn't exist.").asRuntimeException());
+        }
+        if(result == -2){
+          responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
         }
         DeleteAccountResponse response = DeleteAccountResponse.getDefaultInstance();
         responseObserver.onNext(response);
@@ -84,8 +93,12 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to transfer.").asRuntimeException());
       }
       else{
-        if (serverState.transferTo(from, to, amount) == -1){
+        int result = serverState.transferTo(from, to, amount);
+        if (result == -1){
           responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Operation.").asRuntimeException());
+        }
+        if(result == -2){
+          responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
         }
         TransferToResponse response = TransferToResponse.getDefaultInstance();
         responseObserver.onNext(response);
