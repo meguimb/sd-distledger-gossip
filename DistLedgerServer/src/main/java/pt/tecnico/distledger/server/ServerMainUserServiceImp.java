@@ -53,7 +53,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
       else{
         serverState.createAddAccount(id);
-        CreateAccountResponse response = CreateAccountResponse.newBuilder().getDefaultInstanceForType();
+        CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
       }
@@ -69,7 +69,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         if (serverState.deleteAccount(id) == -1){
           responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't delete an account that doesn't exist.").asRuntimeException());
         }
-        DeleteAccountResponse response = DeleteAccountResponse.newBuilder().getDefaultInstanceForType();
+        DeleteAccountResponse response = DeleteAccountResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
       }
@@ -87,7 +87,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         if (serverState.transferTo(from, to, amount) == -1){
           responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Operation.").asRuntimeException());
         }
-        TransferToResponse response = TransferToResponse.newBuilder().getDefaultInstanceForType();
+        TransferToResponse response = TransferToResponse.getDefaultInstance();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
       }

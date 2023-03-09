@@ -30,7 +30,7 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
 
   @Override
   public void activate(ActivateRequest request, StreamObserver<ActivateResponse> responseObserver) {
-    ActivateResponse response = ActivateResponse.newBuilder().build();
+    ActivateResponse response = ActivateResponse.getDefaultInstance();
     state.activate();
 
     responseObserver.onNext(response);
@@ -39,7 +39,7 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
 
   @Override
   public void deactivate(DeactivateRequest request, StreamObserver<DeactivateResponse> responseObserver) {
-    DeactivateResponse response = DeactivateResponse.newBuilder().build();
+    DeactivateResponse response = DeactivateResponse.getDefaultInstance();
     state.deactivate();
 
     responseObserver.onNext(response);
