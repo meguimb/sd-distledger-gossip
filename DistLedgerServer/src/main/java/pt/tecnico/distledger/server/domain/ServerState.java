@@ -80,7 +80,7 @@ public class ServerState {
 
     public int createAddAccount(String id){
         if(is_active == false)
-            return -1; 
+            return -2; 
 
         Account newAccount = new Account(id);
         // TODO: catch errors

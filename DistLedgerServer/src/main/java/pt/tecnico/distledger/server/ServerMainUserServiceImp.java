@@ -51,16 +51,24 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
 
     @Override
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
+      int retVal;
       String id = request.getUserId();
       if (id == null){
         responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't create an account with this id.").asRuntimeException());
       }
       else{
-        if(serverState.createAddAccount(id) == -1)
+        retVal = serverState.createAddAccount(id);
+        if(retVal == -2){
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
-        CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        }
+        else if(retVal == -1){
+          responseObserver.onError(UNAVAILABLE.withDescription("Each user can only have one account maximum.").asRuntimeException());
+        }
+        else{
+          CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
+          responseObserver.onNext(response);
+          responseObserver.onCompleted();
+        }
       }
     }
 
