@@ -41,7 +41,7 @@ public class AdminService {
     }
 
     public static void deactivate(String server) {
-        debug("Attempting to deactivate server")
+        debug("Attempting to deactivate server");
         try {
             DeactivateRequest deactivateRequest = DeactivateRequest.getDefaultInstance();
             DeactivateResponse activateResponse = blockingStub.deactivate(deactivateRequest);
