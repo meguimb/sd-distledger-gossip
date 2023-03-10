@@ -26,9 +26,12 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
     @Override
     public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
       String id; int value;
+
       id = request.getUserId();
+
       serverState.info("Balance request received from user " + id + ".");
       serverState.debug("Checking if user id is valid...");
+
       if (id == null){
         serverState.debug("User id is invalid.");
         responseObserver.onError(INVALID_ARGUMENT.withDescription("User id is invalid.").asRuntimeException());
@@ -37,6 +40,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         serverState.debug("User id is valid.");
         value = serverState.balance(id);
         serverState.debug("Checking if server is active and then if account exists...");
+
         if (value == -2){
           serverState.debug("Server is not active.");
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
@@ -48,7 +52,9 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         else{
           serverState.debug("Server is active and account exists.");
           serverState.debug("Returning balance to user.");
+
           BalanceResponse response = BalanceResponse.newBuilder().setValue(value).build();
+
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
@@ -58,9 +64,12 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
     @Override
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
       int retVal;
+
       String id = request.getUserId();
+
       serverState.info("Create account request received from user " + id + ".");
       serverState.debug("Checking if user id is valid...");
+
       if (id == null){
         serverState.debug("User id is invalid.");
         responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't create an account with this id.").asRuntimeException());
@@ -69,10 +78,13 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         serverState.debug("User id is valid.");
         retVal = serverState.createAddAccount(id);
         serverState.debug("Checking if server is active and then if account already exists...");
+
         if (retVal == 0) {
           serverState.debug("Server is active and account doesn't exist.");
           serverState.debug("Creating account for user.");
+
           CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
+
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
@@ -94,8 +106,10 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
     @Override
     public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
       String id = request.getUserId();
+
       serverState.info("Delete account request received from user " + id + ".");
       serverState.debug("Checking if user id is valid...");
+
       if (id == null){
         serverState.debug("User id is invalid.");
         responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to delete account.").asRuntimeException());
@@ -104,10 +118,13 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         serverState.debug("User id is valid.");
         int result = serverState.deleteAccount(id);
         serverState.debug("Checking if server is active and then if account exists and if it has money...");
+
         if (result == 0) {
           serverState.debug("Server is active, account exists and has no money.");
           serverState.debug("Deleting account.");
+
           DeleteAccountResponse response = DeleteAccountResponse.getDefaultInstance();
+
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
@@ -135,8 +152,10 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       String from = request.getAccountFrom();
       String to = request.getAccountTo();
       int amount = request.getAmount();
+
       serverState.info("Transfer request received of " + amount + " from " + from + " to " + to + ".");
       serverState.debug("Checking if user ids are valid...");
+
       if (from == null || to == null){
         serverState.debug("User ids are invalid.");
         responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to transfer.").asRuntimeException());
@@ -145,9 +164,11 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         serverState.debug("User ids are valid.");
         int result = serverState.transferTo(from, to, amount);
         serverState.debug("Checking if server is active and then if transfer is valid...");
+
         if (result == 0) {
           serverState.debug("Server is active and transfer is valid.");
           serverState.debug("Transferring money.");
+          
           TransferToResponse response = TransferToResponse.getDefaultInstance();
           responseObserver.onNext(response);
           responseObserver.onCompleted();

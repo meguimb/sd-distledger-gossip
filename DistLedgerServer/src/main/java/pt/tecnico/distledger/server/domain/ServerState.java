@@ -19,24 +19,24 @@ public class ServerState {
         this.ledger = new ArrayList<>();
         this.accountsMap = new HashMap<String, Account>();
         is_active = true;
+
         // add broker user
         Account broker = new Account("broker");
         broker.setBalance(1000);
         addAccount(broker);
     }
-    /* TODO: Here should be declared all the server state attributes
-         as well as the methods to access and interact with the state. */
 
     public int balance(String id) {
         Account account;
         int value;
+
+        // return -2 if server not active
         if(is_active == false)
             return -2;
-        // grab Account by String idS
+        
         account = accountsMap.get(id);
-        // check for errors
+        // return -1 if account not active
         if (account == null){
-            // add specific exceptions
             return -1;
         }
         value = account.getBalance();
@@ -48,7 +48,7 @@ public class ServerState {
     }
 
     public int addAccount(Account a){
-        // if returned value of put is different than null is because key already exists
+        // check if account already exists
         if (accountsMap.put(a.getName(), a) != null){
             return -1;
         }
@@ -63,7 +63,6 @@ public class ServerState {
         ledger.add(o);
     }
     
-    // activate -- coloca o servidor em modo ATIVO (este é o comportamento por omissão), em que responde a todos os pedidos
     public void activate(){
         is_active = true;
     }
@@ -85,7 +84,8 @@ public class ServerState {
             return -2; 
 
         Account newAccount = new Account(id);
-        // TODO: catch errors
+
+        // check if addOperation is valid and add it to ledger
         if (addAccount(newAccount) != -1){
             addOperation(new CreateOp(id));
             return 0;
@@ -98,12 +98,14 @@ public class ServerState {
             return -2; 
         Account a = getAccountsMap().get(id);
         synchronized (a){
+            // check if balance is not 0
             if (a.getBalance() != 0){
                 return -3;
             }
             if (accountsMap.remove(id) == null){
                 return -1;
             }
+            // if delete operation is valid, add it ledger
             addOperation(new DeleteOp(id));
             return 0;
         }
@@ -113,9 +115,12 @@ public class ServerState {
         if (is_active == false){
             return -2;
         }
+        // check if trying to transfer to and from the same account
         if (from_id.equals(to_id)){
             return -3;
         }
+
+        // check if amount to transfer is valid
         if (amount <= 0){
             return -4;
         }
@@ -129,6 +134,7 @@ public class ServerState {
                 return -3;
             }
             synchronized (to){   
+                // if transfer operation is valid, add it to ledger
                 if (from.transferTo(to, amount) != -1){
                     addOperation(new TransferOp(from.getName(), to.getName(), amount));
                     return 0;

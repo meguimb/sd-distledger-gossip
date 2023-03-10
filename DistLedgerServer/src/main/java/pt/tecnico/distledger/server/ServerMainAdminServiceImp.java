@@ -57,7 +57,6 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
 
   @Override
   public void getLedgerState(getLedgerStateRequest request, StreamObserver<getLedgerStateResponse> responseObserver) {
-    //getLedgerStateResponse response = getLedgerStateResponse.newBuilder().setLedgerState(state.getLedgerState()).build();
     List<Operation> ledgerOps = state.getLedgerState();
     List<DistLedgerCommonDefinitions.Operation> convertedOps = new ArrayList<>();
     state.info("Request to get ledger state received from admin");
@@ -67,6 +66,7 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
       Operation op = ledgerOps.get(i);
       DistLedgerCommonDefinitions.Operation newOp;
 
+      // check each type of operation
       if(op instanceof TransferOp) {
         TransferOp transferOp = (TransferOp) op;
         newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(transferOp.getAccount()).setDestUserId(transferOp.getDestAccount()).setAmount(transferOp.getAmount()).build();
