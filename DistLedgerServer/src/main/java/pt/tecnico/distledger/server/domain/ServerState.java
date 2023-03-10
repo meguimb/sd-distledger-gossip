@@ -13,6 +13,7 @@ public class ServerState {
 	private List<Operation> ledger;
 	private Map<String, Account> accountsMap;
     private Boolean is_active;
+    private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
     public ServerState() {
         this.ledger = new ArrayList<>();
@@ -29,7 +30,6 @@ public class ServerState {
     public int balance(String id) {
         Account account;
         int value;
-
         if(is_active == false)
             return -2;
         // grab Account by String idS
@@ -98,6 +98,9 @@ public class ServerState {
             return -2; 
         Account a = getAccountsMap().get(id);
         synchronized (a){
+            if (a.getBalance() != 0){
+                return -3;
+            }
             if (accountsMap.remove(id) == null){
                 return -1;
             }
@@ -110,8 +113,11 @@ public class ServerState {
         if (is_active == false){
             return -2;
         }
-        if (from_id == to_id){
+        if (from_id.equals(to_id)){
             return -3;
+        }
+        if (amount <= 0){
+            return -4;
         }
         Account from = getAccountsMap().get(from_id);
         if (from == null){
@@ -130,5 +136,14 @@ public class ServerState {
                 return -1;
             }
         }
+    }
+    public void debug(String message) {
+        if (DEBUG_FLAG) {
+            System.err.println("[DEBUG] " + message);
+        }
+      }
+  
+    public void info(String message) {
+        System.out.println("[INFO] " + message);
     }
 }
