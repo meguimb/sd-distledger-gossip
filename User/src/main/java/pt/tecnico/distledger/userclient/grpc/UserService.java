@@ -85,7 +85,7 @@ public class UserService {
 
     private static void debug(String message) {
         if (DEBUG_FLAG) {
-            System.err.println(message);
+            System.err.println("[DEBUG] " + message);
         }
     }
 
