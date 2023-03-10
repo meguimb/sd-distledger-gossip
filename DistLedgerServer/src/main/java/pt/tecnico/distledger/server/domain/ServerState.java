@@ -94,28 +94,39 @@ public class ServerState {
     public int deleteAccount(String id){
         if(is_active == false)
             return -2; 
-            
-        if (accountsMap.remove(id) == null){
-            return -1;
+        Account a = getAccountsMap().get(id);
+        synchronized (a){
+            if (accountsMap.remove(id) == null){
+                return -1;
+            }
+            addOperation(new DeleteOp(id));
+            return 0;
         }
-        addOperation(new DeleteOp(id));
-        return 0;
     }
 
     public int transferTo(String from_id, String to_id, int amount){
         if (is_active == false){
             return -2;
         }
-        Account from = getAccountsMap().get(from_id);
-        Account to = getAccountsMap().get(to_id);
-        if (from_id == to_id || from == null || to == null){
+        if (from_id == to_id){
             return -3;
         }
-        if (from.transferTo(to, amount) != -1){
-            addOperation(new TransferOp(from.getName(), to.getName(), amount));
-            return 0;
+        Account from = getAccountsMap().get(from_id);
+        if (from == null){
+            return -3;
         }
-        return -1;
+        synchronized (from){
+            Account to = getAccountsMap().get(to_id);
+            if (to == null){
+                return -3;
+            }
+            synchronized (to){   
+                if (from.transferTo(to, amount) != -1){
+                    addOperation(new TransferOp(from.getName(), to.getName(), amount));
+                    return 0;
+                }
+                return -1;
+            }
+        }
     }
-
 }
