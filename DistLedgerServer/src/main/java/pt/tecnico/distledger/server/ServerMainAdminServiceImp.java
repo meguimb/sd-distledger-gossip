@@ -22,7 +22,7 @@ import io.grpc.Status;
 import java.util.*;
 
 public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImplBase {
-  private ServerState state = new ServerState();
+  private ServerState state;
 
   public ServerMainAdminServiceImp(ServerState s) {
     this.state = s;
@@ -31,6 +31,8 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
   @Override
   public void activate(ActivateRequest request, StreamObserver<ActivateResponse> responseObserver) {
     ActivateResponse response = ActivateResponse.getDefaultInstance();
+    state.info("Request to activate server received from admin");
+    state.debug("Activating server");
     state.activate();
 
     responseObserver.onNext(response);
@@ -40,6 +42,8 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
   @Override
   public void deactivate(DeactivateRequest request, StreamObserver<DeactivateResponse> responseObserver) {
     DeactivateResponse response = DeactivateResponse.getDefaultInstance();
+    state.info("Request to deactivate server received from admin");
+    state.debug("Deactivating server");
     state.deactivate();
 
     responseObserver.onNext(response);
@@ -56,6 +60,8 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
     //getLedgerStateResponse response = getLedgerStateResponse.newBuilder().setLedgerState(state.getLedgerState()).build();
     List<Operation> ledgerOps = state.getLedgerState();
     List<DistLedgerCommonDefinitions.Operation> convertedOps = new ArrayList<>();
+    state.info("Request to get ledger state received from admin");
+    state.debug("Converting ledger state to protobuf format...");
 
     for(int i = 0; i < ledgerOps.size(); i++) {
       Operation op = ledgerOps.get(i);
@@ -79,7 +85,7 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
 
       convertedOps.add(newOp);
     }
-
+    state.debug("Returning ledger state to admin");
     DistLedgerCommonDefinitions.LedgerState ledgerState = DistLedgerCommonDefinitions.LedgerState.newBuilder().addAllLedger(convertedOps).build();
     getLedgerStateResponse response = getLedgerStateResponse.newBuilder().setLedgerState(ledgerState).build();
 
