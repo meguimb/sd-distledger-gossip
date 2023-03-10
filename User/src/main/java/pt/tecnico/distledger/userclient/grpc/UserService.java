@@ -60,7 +60,7 @@ public class UserService {
         try {
             BalanceRequest balanceRequest = BalanceRequest.newBuilder().setUserId(username).build();
             BalanceResponse balanceResponse = stub.balance(balanceRequest);
-            System.out.println("OK\n" + balanceResponse.toString());
+            System.out.println("OK\n" + balanceResponse.getValue() + "\n");
             debug("Balance retrieved successfully!");
         }
         catch (StatusRuntimeException e) {
