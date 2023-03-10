@@ -96,6 +96,8 @@ public class ServerState {
             return -2; 
         Account a = getAccountsMap().get(id);
         synchronized (a){
+            if(a.getBalance() != 0)
+                return -3;
             if (accountsMap.remove(id) == null){
                 return -1;
             }

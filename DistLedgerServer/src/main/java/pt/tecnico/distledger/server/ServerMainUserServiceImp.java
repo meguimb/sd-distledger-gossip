@@ -10,14 +10,11 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 import io.grpc.stub.StreamObserver;
-import pt.tecnico.distledger.server.domain.Account;
 import pt.tecnico.distledger.server.domain.ServerState;
-import pt.tecnico.distledger.server.ServerMain;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
 import static io.grpc.Status.FAILED_PRECONDITION;
-
-import io.grpc.Status;
+import static io.grpc.Status.UNKNOWN;
 
 public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBase {
   private ServerState serverState;
@@ -59,16 +56,19 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
       else{
         retVal = serverState.createAddAccount(id);
-        if(retVal == -2){
+        if (retVal == 0) {
+          CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
+          responseObserver.onNext(response);
+          responseObserver.onCompleted();
+        }
+        else if(retVal == -2){
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
         }
         else if(retVal == -1){
           responseObserver.onError(FAILED_PRECONDITION.withDescription("Each user can only have one account maximum.").asRuntimeException());
         }
         else{
-          CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
-          responseObserver.onNext(response);
-          responseObserver.onCompleted();
+          responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
         }
       }
     }
@@ -79,18 +79,24 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       if (id == null){
         responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to delete account.").asRuntimeException());
       }
-      else{
+      else {
         int result = serverState.deleteAccount(id);
-        if (result == -1){
-          responseObserver.onError(FAILED_PRECONDITION.withDescription("You can't delete an account that doesn't exist.").asRuntimeException());
-        }
-        if(result == -2){
-          responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
-        }
-        else{
+        if (result == 0) {
           DeleteAccountResponse response = DeleteAccountResponse.getDefaultInstance();
           responseObserver.onNext(response);
           responseObserver.onCompleted();
+        }
+        else if (result == -1){
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("You can't delete an account that doesn't exist.").asRuntimeException());
+        }
+        else if(result == -2){
+          responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
+        }
+        else if(result == -3) {
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("You can't delete an account that has money.").asRuntimeException());
+        }
+        else{
+          responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
         }
       }
     }
@@ -105,7 +111,12 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
       else{
         int result = serverState.transferTo(from, to, amount);
-        if (result == -3){
+        if (result == 0) {
+          TransferToResponse response = TransferToResponse.getDefaultInstance();
+          responseObserver.onNext(response);
+          responseObserver.onCompleted();
+        }
+        else if (result == -3){
           responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid ids to the account. You can't transfer to and from the same account!").asRuntimeException());
         }
         else if (result == -1){
@@ -115,9 +126,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
         }
         else{
-          TransferToResponse response = TransferToResponse.getDefaultInstance();
-          responseObserver.onNext(response);
-          responseObserver.onCompleted();
+          responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
         }
       }
     }
