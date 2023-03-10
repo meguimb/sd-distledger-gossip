@@ -28,6 +28,7 @@ public class ServerState {
 
     public int balance(String id) {
         Account account;
+        int value;
 
         if(is_active == false)
             return -2;
@@ -38,7 +39,8 @@ public class ServerState {
             // add specific exceptions
             return -1;
         }
-        return account.getBalance();
+        value = account.getBalance();
+        return value;
     }
 
     public Map<String, Account> getAccountsMap(){
@@ -96,8 +98,6 @@ public class ServerState {
             return -2; 
         Account a = getAccountsMap().get(id);
         synchronized (a){
-            if(a.getBalance() != 0)
-                return -3;
             if (accountsMap.remove(id) == null){
                 return -1;
             }
