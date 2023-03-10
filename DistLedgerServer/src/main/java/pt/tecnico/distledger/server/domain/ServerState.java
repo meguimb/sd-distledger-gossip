@@ -103,8 +103,14 @@ public class ServerState {
     }
 
     public int transferTo(String from_id, String to_id, int amount){
+        if (is_active == false){
+            return -2;
+        }
         Account from = getAccountsMap().get(from_id);
         Account to = getAccountsMap().get(to_id);
+        if (from_id == to_id || from == null || to == null){
+            return -3;
+        }
         if (from.transferTo(to, amount) != -1){
             addOperation(new TransferOp(from.getName(), to.getName(), amount));
             return 0;

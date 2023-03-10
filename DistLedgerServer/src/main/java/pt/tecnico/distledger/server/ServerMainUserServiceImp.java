@@ -13,7 +13,6 @@ import io.grpc.stub.StreamObserver;
 import pt.tecnico.distledger.server.domain.Account;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.ServerMain;
-import pt.tecnico.distledger.server.domain.ServerState;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
 import static io.grpc.Status.FAILED_PRECONDITION;
@@ -83,7 +82,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       else{
         int result = serverState.deleteAccount(id);
         if (result == -1){
-          responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't delete an account that doesn't exist.").asRuntimeException());
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("You can't delete an account that doesn't exist.").asRuntimeException());
         }
         if(result == -2){
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
@@ -106,8 +105,11 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
       else{
         int result = serverState.transferTo(from, to, amount);
-        if (result == -1){
-          responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Operation.").asRuntimeException());
+        if (result == -3){
+          responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid ids to the account. You can't transfer to and from the same account!").asRuntimeException());
+        }
+        else if (result == -1){
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("Invalid Transfer Operation.").asRuntimeException());
         }
         else if(result == -2){
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
