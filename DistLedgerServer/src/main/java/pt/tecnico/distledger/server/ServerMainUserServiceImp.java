@@ -16,6 +16,8 @@ import pt.tecnico.distledger.server.ServerMain;
 import pt.tecnico.distledger.server.domain.ServerState;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
+import static io.grpc.Status.FAILED_PRECONDITION;
+
 import io.grpc.Status;
 
 public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBase {
@@ -62,7 +64,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
         }
         else if(retVal == -1){
-          responseObserver.onError(UNAVAILABLE.withDescription("Each user can only have one account maximum.").asRuntimeException());
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("Each user can only have one account maximum.").asRuntimeException());
         }
         else{
           CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
@@ -86,9 +88,11 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         if(result == -2){
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
         }
-        DeleteAccountResponse response = DeleteAccountResponse.getDefaultInstance();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        else{
+          DeleteAccountResponse response = DeleteAccountResponse.getDefaultInstance();
+          responseObserver.onNext(response);
+          responseObserver.onCompleted();
+        }
       }
     }
 
@@ -105,12 +109,14 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         if (result == -1){
           responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Operation.").asRuntimeException());
         }
-        if(result == -2){
+        else if(result == -2){
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
         }
-        TransferToResponse response = TransferToResponse.getDefaultInstance();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        else{
+          TransferToResponse response = TransferToResponse.getDefaultInstance();
+          responseObserver.onNext(response);
+          responseObserver.onCompleted();
+        }
       }
     }
 
