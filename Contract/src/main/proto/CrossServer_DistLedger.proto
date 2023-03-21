@@ -11,6 +11,36 @@ message PropagateStateRequest {
 
 message PropagateStateResponse {}
 
+message RegisterRequest {
+  string serviceName = 1;
+  string qualificator = 2;
+  string serverAddress = 3;
+}
+
+message RegisterResponse {
+}
+
+message LookupRequest {
+  string serviceName = 1;
+  string qualificator = 2;
+}
+
+message LookupResponse {
+  repeated string serverAddress = 1;
+}
+
+message DeleteRequest {
+  string serviceName = 1;
+  string serverAddress = 2;
+}
+
+message DeleteResponse {
+}
+
 service DistLedgerCrossServerService {
   rpc propagateState(PropagateStateRequest) returns (PropagateStateResponse);
+  rpc register(RegisterRequest) returns (RegisterResponse);
+  rpc lookup(LookupRequest) returns (LookupResponse);
+  rpc delete(DeleteRequest) returns (DeleteResponse);
 }
+
