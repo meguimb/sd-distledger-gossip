@@ -14,9 +14,9 @@ public class NamingServer {
     // irá guardar toda a informação que o servidor necessita, ou seja, contém 
     // um mapa que permite associar um nome de um serviço à ServiceEntry correspondente.
 
-    Integer port = 5001;
+    static Integer port = 5001;
 
-    public void main(String[] args) throws IOException, InterruptedException{
+    public static void main(String[] args) throws IOException, InterruptedException{
 
         // $ mvn exec:java -Dexec.args="5001 A"
         System.out.printf("Current Server running is: %s\n", NamingServer.class.getSimpleName());
