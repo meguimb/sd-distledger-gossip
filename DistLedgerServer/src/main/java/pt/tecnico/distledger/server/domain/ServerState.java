@@ -26,8 +26,9 @@ public class ServerState {
         addAccount(broker);
     }
 
+    // operação de leitura
     public int balance(String id) {
-        Account account;
+        Account account;    
         int value;
 
         // return -2 if server not active
@@ -71,6 +72,11 @@ public class ServerState {
         is_active = false;
     }
 
+    public Boolean getIsActive(){
+        return this.is_active;
+    }
+
+    // operação de leitura
     public List<Operation> getLedgerState(){
         return getLedger();
     }
@@ -79,6 +85,7 @@ public class ServerState {
         // TODO - fase 3
     }
 
+    // operação de escrita
     public int createAddAccount(String id){
         if(is_active == false)
             return -2; 
@@ -93,6 +100,7 @@ public class ServerState {
         return -1;
     }
 
+    // operação de escrita
     public int deleteAccount(String id){
         if(is_active == false)
             return -2; 
@@ -111,6 +119,7 @@ public class ServerState {
         }
     }
 
+    // operação de escrita 
     public int transferTo(String from_id, String to_id, int amount){
         if (is_active == false){
             return -2;
@@ -143,11 +152,46 @@ public class ServerState {
             }
         }
     }
+
+    public int propagateState(List<Operation> newLedger){
+        // reset everything
+        List<Operation> temp = newLedger;
+        Operation parentOp;
+
+        this.ledger = new ArrayList<>();
+        this.accountsMap = new HashMap<String, Account>();
+        is_active = true;
+
+        // add broker user
+        Account broker = new Account("broker");
+        broker.setBalance(1000);
+        addAccount(broker);
+
+        // do each operation from state's ledger
+        for (int i = 0; i < temp.size(); i++) {
+            parentOp = temp.get(i);
+            // do operation and add it to ledger
+            if (parentOp instanceof TransferOp){
+                TransferOp op = (TransferOp) parentOp;
+                transferTo(op.getAccount(), op.getDestAccount(), op.getAmount());
+            }
+            else if (parentOp instanceof CreateOp){
+                CreateOp op = (CreateOp) parentOp;
+                createAddAccount(op.getAccount());
+            }
+            else if (parentOp instanceof DeleteOp){
+                DeleteOp op = (DeleteOp) parentOp;
+                deleteAccount(op.getAccount());
+            }
+        }
+        return 0;
+    }
+
     public void debug(String message) {
         if (DEBUG_FLAG) {
             System.err.println("[DEBUG] " + message);
         }
-      }
+    }
   
     public void info(String message) {
         System.out.println("[INFO] " + message);
