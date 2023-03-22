@@ -173,21 +173,25 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
+        else if (result == -1){
+          serverState.debug("Server is active but transfer is invalid, attempted to transfer more money than the account has.");
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("Invalid Transfer Operation.").asRuntimeException());
+        }
         else if(result == -2){
           serverState.debug("Server is not active.");
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
         }
         else if (result == -3){
           serverState.debug("Server is active but transfer is invalid, attempted to transfer to and from the same account.");
-          responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid ids to the account. You can't transfer to and from the same account!").asRuntimeException());
-        }
-        else if (result == -1){
-          serverState.debug("Server is active but transfer is invalid, attempted to transfer more money than the account has.");
-          responseObserver.onError(FAILED_PRECONDITION.withDescription("Invalid Transfer Operation.").asRuntimeException());
+          responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't transfer to and from the same account!").asRuntimeException());
         }
         else if (result == -4){
           serverState.debug("Server is active but transfer is invalid, attempted to transfer an invalid amount.");
           responseObserver.onError(FAILED_PRECONDITION.withDescription("Invalid amount to transfer.").asRuntimeException());
+        }
+        else if (result == -5){
+          serverState.debug("Server is active but one or both accounts don't exist.");
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("Accounts don't exist.").asRuntimeException());
         }
         else{
           serverState.debug("Unknown error occurred.");

@@ -64,10 +64,12 @@ public class ServerState {
         ledger.add(o);
     }
     
+    // function to activate the server
     public void activate(){
         is_active = true;
     }
 
+    // function to deactivate the server
     public void deactivate(){
         is_active = false;
     }
@@ -102,17 +104,29 @@ public class ServerState {
 
     // operação de escrita
     public int deleteAccount(String id){
+
+        // if server is not active, don't perform operation
         if(is_active == false)
             return -2; 
+
+        // check if account is valid
         Account a = getAccountsMap().get(id);
+        if (a == null){
+            return -1;
+        }
+
         synchronized (a){
+
             // check if balance is not 0
             if (a.getBalance() != 0){
                 return -3;
             }
+
+            // check if we're able to remove account
             if (accountsMap.remove(id) == null){
                 return -1;
             }
+
             // if delete operation is valid, add it ledger
             addOperation(new DeleteOp(id));
             return 0;
@@ -121,9 +135,12 @@ public class ServerState {
 
     // operação de escrita 
     public int transferTo(String from_id, String to_id, int amount){
+
+        // if server's not active, don't perform operation
         if (is_active == false){
             return -2;
         }
+
         // check if trying to transfer to and from the same account
         if (from_id.equals(to_id)){
             return -3;
@@ -133,23 +150,27 @@ public class ServerState {
         if (amount <= 0){
             return -4;
         }
+
+        // check if source account is valid
         Account from = getAccountsMap().get(from_id);
         if (from == null){
-            return -3;
+            return -5;
         }
-        synchronized (from){
-            Account to = getAccountsMap().get(to_id);
-            if (to == null){
-                return -3;
+
+        // check if dest account is valid
+        Account to = getAccountsMap().get(to_id);
+        if (to == null){
+            return -5;
+        }
+
+        // do transferTo operation
+        synchronized (this){   
+            // if transfer operation is valid, add it to ledger
+            if (from.transferTo(to, amount) != -1){
+                addOperation(new TransferOp(from.getName(), to.getName(), amount));
+                return 0;
             }
-            synchronized (to){   
-                // if transfer operation is valid, add it to ledger
-                if (from.transferTo(to, amount) != -1){
-                    addOperation(new TransferOp(from.getName(), to.getName(), amount));
-                    return 0;
-                }
-                return -1;
-            }
+            return -1;
         }
     }
 

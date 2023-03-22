@@ -67,28 +67,4 @@ public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServic
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     }
-
-    @Override
-    public void register(RegisterRequest request, StreamObserver<RegisterResponse> responseObserver) {
-      // TODO
-      // request tem string serviceName = 1; string qualificator = 2; string serverAddress = 3;
-      // e response não tem nada
-
-    }
-
-    @Override
-    public void lookup(LookupRequest request, StreamObserver<LookupResponse> responseObserver) {
-      // TODO
-      // request tem serviceName = 1; string qualificator = 2;
-      // e response tem serverAddress
-
-    }
-
-    @Override
-    public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
-      // TODO
-      // request tem serviceName = 1; e string serverAddress = 2;
-      // response não tem nada
-
-    }
 }

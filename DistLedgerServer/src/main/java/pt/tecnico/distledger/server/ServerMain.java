@@ -7,12 +7,19 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import pt.tecnico.distledger.server.ServerMainAdminServiceImp;
 import java.io.IOException;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 
 public class ServerMain {
-    public static void main(String[] args) throws IOException, InterruptedException {
+	static String host = "localhost";
+	static String target;
+    static ManagedChannel channel;
+    static DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub blockingStub;
 
+    public static void main(String[] args) throws IOException, InterruptedException {
+		// register e lookup do servidor
         // $ mvn exec:java -Dexec.args="2001 A"
-        System.out.printf("Current Server running is: %s\n", ServerMain.class.getSimpleName());
 
 		// check arguments
 		if (args.length < 2) {
@@ -21,9 +28,16 @@ public class ServerMain {
 			return;
 		}
 
-		// get port and ignore qualificator for now
+		// get port and server qualificator
 		final int port = Integer.parseInt(args[0]);
 		char qualificator = args[1].charAt(0);
+
+		//
+		target = host + ":" + port;
+		channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+        blockingStub = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
+
+		// lookup
 
 		// create server state
 		ServerState serverState = new ServerState();
@@ -39,5 +53,10 @@ public class ServerMain {
 		server.awaitTermination();
     }
 
+	
+	public void close() {
+        channel.shutdown();
+    }
+	
 }
 
