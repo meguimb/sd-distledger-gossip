@@ -21,15 +21,6 @@ public class NamingServer {
         // $ mvn exec:java -Dexec.args="5001 A"
         System.out.printf("Current Server running is: %s\n", NamingServer.class.getSimpleName());
 
-		// check arguments
-		if (args.length < 2) {
-			System.err.println("Argument(s) missing!");
-			System.err.printf("Usage: java %s port qualificator\n", NamingServer.class.getSimpleName());
-			return;
-		}
-
-		// get port and ignore qualificator for now
-
         // create server state
 		NamingServerState state = new NamingServerState();
 
