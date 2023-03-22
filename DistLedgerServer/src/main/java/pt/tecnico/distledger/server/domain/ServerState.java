@@ -13,11 +13,13 @@ public class ServerState {
 	private List<Operation> ledger;
 	private Map<String, Account> accountsMap;
     private Boolean is_active;
+    private char qualificator;
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
-    public ServerState() {
+    public ServerState(char qualificator) {
         this.ledger = new ArrayList<>();
         this.accountsMap = new HashMap<String, Account>();
+        this.qualificator = qualificator;
         is_active = true;
 
         // add broker user
@@ -90,7 +92,9 @@ public class ServerState {
     // operação de escrita
     public int createAddAccount(String id){
         if(is_active == false)
-            return -2; 
+            return -2;
+        if(qualificator == 'B')
+            return -3;
 
         Account newAccount = new Account(id);
 
@@ -107,7 +111,9 @@ public class ServerState {
 
         // if server is not active, don't perform operation
         if(is_active == false)
-            return -2; 
+            return -2;
+        if(qualificator == 'B')
+            return -4;
 
         // check if account is valid
         Account a = getAccountsMap().get(id);
@@ -140,6 +146,8 @@ public class ServerState {
         if (is_active == false){
             return -2;
         }
+        if(qualificator == 'B')
+            return -6;
 
         // check if trying to transfer to and from the same account
         if (from_id.equals(to_id)){

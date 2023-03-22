@@ -96,6 +96,9 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           serverState.debug("Server is active but account already exists.");
           responseObserver.onError(FAILED_PRECONDITION.withDescription("Each user can only have one account maximum.").asRuntimeException());
         }
+        else if(retVal == -3) {
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("This server is secondary").asRuntimeException());
+        }
         else{
           serverState.debug("Unknown error occurred.");
           responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
@@ -139,6 +142,9 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         else if(result == -3) {
           serverState.debug("Server is active, account exists but has money.");
           responseObserver.onError(FAILED_PRECONDITION.withDescription("You can't delete an account that has money.").asRuntimeException());
+        }
+        else if(result == -4) {
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("This server is secondary").asRuntimeException());
         }
         else{
           serverState.debug("Unknown error occurred.");
@@ -192,6 +198,9 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         else if (result == -5){
           serverState.debug("Server is active but one or both accounts don't exist.");
           responseObserver.onError(FAILED_PRECONDITION.withDescription("Accounts don't exist.").asRuntimeException());
+        }
+        else if(result == -6) {
+          responseObserver.onError(FAILED_PRECONDITION.withDescription("This server is secondary").asRuntimeException());
         }
         else{
           serverState.debug("Unknown error occurred.");
