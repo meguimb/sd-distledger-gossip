@@ -4,6 +4,7 @@ import java.util.*;
 import pt.tecnico.distledger.server.domain.operation.CreateOp;
 import pt.tecnico.distledger.server.domain.operation.DeleteOp;
 import pt.tecnico.distledger.server.domain.operation.TransferOp;
+import pt.tecnico.distledger.server.grpc.DistLedgerService;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.tecnico.distledger.server.domain.Account;
 
@@ -12,7 +13,7 @@ public class ServerState {
 
 	private List<Operation> ledger;
 	private Map<String, Account> accountsMap;
-    private Boolean is_active;
+    private Boolean is_active = true;
     private char qualificator;
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
@@ -20,8 +21,7 @@ public class ServerState {
         this.ledger = new ArrayList<>();
         this.accountsMap = new HashMap<String, Account>();
         this.qualificator = qualificator;
-        is_active = true;
-
+        
         // add broker user
         Account broker = new Account("broker");
         broker.setBalance(1000);

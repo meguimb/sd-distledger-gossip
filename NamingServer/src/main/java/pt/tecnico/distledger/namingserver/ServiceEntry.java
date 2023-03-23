@@ -5,7 +5,7 @@ import java.util.*;
 
 public class ServiceEntry {
 
-    // irá guardar o nome de um serviço e um conjunto de ServerEntrys. 
+    // irá guardar o nome de um serviço e um conjunto de ServerEntries. 
     private String serviceName;
     private List<ServerEntry> serverEntries;
 

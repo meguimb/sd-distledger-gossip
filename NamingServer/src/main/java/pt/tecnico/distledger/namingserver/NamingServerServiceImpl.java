@@ -1,12 +1,12 @@
 package pt.tecnico.distledger.namingserver;
 
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.RegisterRequest;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.RegisterResponse;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.LookupRequest;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.LookupResponse;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.DeleteRequest;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.DeleteResponse;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterResponse;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRequest;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteResponse;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServiceGrpc;
 import pt.tecnico.distledger.namingserver.ServerEntry;
 import pt.tecnico.distledger.namingserver.ServiceEntry;
 import pt.tecnico.distledger.namingserver.NamingServer;
@@ -19,7 +19,7 @@ import static io.grpc.Status.FAILED_PRECONDITION;
 import static io.grpc.Status.UNKNOWN;
 import java.util.*;
 
-public class NamingServerServiceImpl extends DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceImplBase {
+public class NamingServerServiceImpl extends NamingServiceGrpc.NamingServiceImplBase {
     private NamingServerState state;
 
     public NamingServerServiceImpl(NamingServerState state) {
@@ -40,7 +40,7 @@ public class NamingServerServiceImpl extends DistLedgerCrossServerServiceGrpc.Di
         retVal = state.addServiceEntry(serviceName, qualificator, serverAddress);
 
         if (retVal == 0){
-            state.info("Registered service %s at server %s at %s.");
+            state.info("Registered serverEntry " + serverAddress + " for service " + serviceName + " with qualificator " + qualificator);
             RegisterResponse response = RegisterResponse.getDefaultInstance();
             responseObserver.onNext(response);
             responseObserver.onCompleted();

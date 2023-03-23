@@ -1,6 +1,7 @@
 package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.ServerState;
+import pt.tecnico.distledger.server.grpc.DistLedgerService;
 import pt.tecnico.distledger.server.ServerMainUserServiceImp;
 import io.grpc.BindableService;
 import io.grpc.Server;
@@ -32,7 +33,6 @@ public class ServerMain {
 		final int port = Integer.parseInt(args[0]);
 		char qualificator = args[1].charAt(0);
 
-		//
 		target = host + ":" + port;
 		channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         blockingStub = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
@@ -40,14 +40,18 @@ public class ServerMain {
 		// lookup
 
 		// create server state
-		ServerState serverState = new ServerState();
+		ServerState serverState = new ServerState(qualificator);
 
 		// create user and admin service implementations for main server
 		final BindableService impUser = new ServerMainUserServiceImp(serverState);
 		final BindableService impAdmin = new ServerMainAdminServiceImp(serverState);
+		final BindableService impCrossServer = new ServerMainCrossServerServiceImp(serverState);
+
+		DistLedgerService distLedgerService = new DistLedgerService(host);
+		distLedgerService.Register(qualificator);
 
 		// create server with both services and start it
-		Server server = ServerBuilder.forPort(port).addService(impUser).addService(impAdmin).build();
+		Server server = ServerBuilder.forPort(port).addService(impUser).addService(impAdmin).addService(impCrossServer).build();
 		server.start();
 		System.out.printf("Server %c started at port %d\n", qualificator, port);
 		server.awaitTermination();
