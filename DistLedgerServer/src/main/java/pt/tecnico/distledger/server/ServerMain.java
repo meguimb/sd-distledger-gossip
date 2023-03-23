@@ -43,12 +43,12 @@ public class ServerMain {
 		ServerState serverState = new ServerState(qualificator);
 
 		// create user and admin service implementations for main server
-		final BindableService impUser = new ServerMainUserServiceImp(serverState);
+		DistLedgerService distLedgerService = new DistLedgerService(host);
+		final BindableService impUser = new ServerMainUserServiceImp(serverState, distLedgerService);
 		final BindableService impAdmin = new ServerMainAdminServiceImp(serverState);
 		final BindableService impCrossServer = new ServerMainCrossServerServiceImp(serverState);
 
-		DistLedgerService distLedgerService = new DistLedgerService(host);
-		distLedgerService.Register(qualificator);
+		distLedgerService.Register(qualificator, String.valueOf(port));
 
 		// create server with both services and start it
 		Server server = ServerBuilder.forPort(port).addService(impUser).addService(impAdmin).addService(impCrossServer).build();

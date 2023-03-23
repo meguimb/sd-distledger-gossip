@@ -90,10 +90,10 @@ public class ServerState {
     }
 
     // operação de escrita
-    public int createAddAccount(String id){
+    public int createAddAccount(String id, Boolean isPropagating){
         if(is_active == false)
             return -2;
-        if(qualificator == 'B')
+        if(qualificator == 'B' && isPropagating == false)
             return -3;
 
         Account newAccount = new Account(id);
@@ -107,12 +107,12 @@ public class ServerState {
     }
 
     // operação de escrita
-    public int deleteAccount(String id){
+    public int deleteAccount(String id, Boolean isPropagating){
 
         // if server is not active, don't perform operation
         if(is_active == false)
             return -2;
-        if(qualificator == 'B')
+        if(qualificator == 'B' && isPropagating == false)
             return -4;
 
         // check if account is valid
@@ -140,13 +140,13 @@ public class ServerState {
     }
 
     // operação de escrita 
-    public int transferTo(String from_id, String to_id, int amount){
+    public int transferTo(String from_id, String to_id, int amount, Boolean isPropagating){
 
         // if server's not active, don't perform operation
         if (is_active == false){
             return -2;
         }
-        if(qualificator == 'B')
+        if(qualificator == 'B' && isPropagating == false)
             return -6;
 
         // check if trying to transfer to and from the same account
@@ -202,15 +202,15 @@ public class ServerState {
             // do operation and add it to ledger
             if (parentOp instanceof TransferOp){
                 TransferOp op = (TransferOp) parentOp;
-                transferTo(op.getAccount(), op.getDestAccount(), op.getAmount());
+                transferTo(op.getAccount(), op.getDestAccount(), op.getAmount(), true);
             }
             else if (parentOp instanceof CreateOp){
                 CreateOp op = (CreateOp) parentOp;
-                createAddAccount(op.getAccount());
+                createAddAccount(op.getAccount(), true);
             }
             else if (parentOp instanceof DeleteOp){
                 DeleteOp op = (DeleteOp) parentOp;
-                deleteAccount(op.getAccount());
+                deleteAccount(op.getAccount(), true);
             }
         }
         return 0;

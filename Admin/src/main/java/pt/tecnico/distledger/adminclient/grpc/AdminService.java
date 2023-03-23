@@ -15,22 +15,31 @@ import java.util.function.Function;
 
 public class AdminService {
 
-    final String target;
-    final ManagedChannel channel;
-    static AdminServiceGrpc.AdminServiceBlockingStub blockingStub;
+    public static String target;
+    public static String hostname;
+    static NamingServerLookup lookup;
+    public static ManagedChannel channel;
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
     public AdminService(String host, int port) {
+        hostname = host;
         target = host + ":" + port;
-        channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        blockingStub = AdminServiceGrpc.newBlockingStub(channel);
+        lookup = new NamingServerLookup(target);
+    }
+
+    public static AdminServiceGrpc.AdminServiceBlockingStub getStub(String server) {
+        channel = ManagedChannelBuilder.forTarget(hostname + ":" + lookup.lookup(server).getServerAddress(0)).usePlaintext().build();
+        AdminServiceGrpc.AdminServiceBlockingStub stub = AdminServiceGrpc.newBlockingStub(channel);
+        return stub;
     }
 
     public static void activate(String server) {
         debug("Attempting to activate server");
         try {
+            AdminServiceGrpc.AdminServiceBlockingStub stub = getStub(server);
             ActivateRequest activateRequest = ActivateRequest.getDefaultInstance();
-            ActivateResponse activateResponse = blockingStub.activate(activateRequest);
+            ActivateResponse activateResponse = stub.activate(activateRequest);
+            channel.shutdown();
             System.out.println("OK\n" + activateResponse.toString());
             debug("Server activated successfully!");
         }
@@ -43,8 +52,10 @@ public class AdminService {
     public static void deactivate(String server) {
         debug("Attempting to deactivate server");
         try {
+            AdminServiceGrpc.AdminServiceBlockingStub stub = getStub(server);
             DeactivateRequest deactivateRequest = DeactivateRequest.getDefaultInstance();
-            DeactivateResponse activateResponse = blockingStub.deactivate(deactivateRequest);
+            DeactivateResponse activateResponse = stub.deactivate(deactivateRequest);
+            channel.shutdown();
             System.out.println("OK\n" + activateResponse.toString());
             debug("Server deactivated successfully!");
         }
@@ -57,9 +68,11 @@ public class AdminService {
     public static void getLedgerState(String server) {
         debug("Attempting to get ledger state");
         try {
+            AdminServiceGrpc.AdminServiceBlockingStub stub = getStub(server);
             getLedgerStateRequest request = getLedgerStateRequest.getDefaultInstance();
-            getLedgerStateResponse response = blockingStub.getLedgerState(request);
+            getLedgerStateResponse response = stub.getLedgerState(request);
             System.out.println("OK\n" + response.toString());
+            channel.shutdown();
             debug("Ledger state retrieved successfully!");
         }
         catch(StatusRuntimeException e) {

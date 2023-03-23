@@ -1,4 +1,5 @@
 package pt.tecnico.distledger.server.grpc;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateResponse;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
@@ -26,20 +27,60 @@ import io.grpc.StatusRuntimeException;
 public class DistLedgerService {
 
     public static String target;
+    public static String hostname;
     public static ManagedChannel channel;
     static NamingServiceGrpc.NamingServiceBlockingStub stub;
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
     public DistLedgerService(String host) {
         target = host + ":5001";
+        hostname = host;
         channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         stub = NamingServiceGrpc.newBlockingStub(channel);
     }
     
-    public void Register(char server) {
+    public void Register(char server, String port) {
         try {
-            RegisterRequest request = RegisterRequest.newBuilder().setQualificator(String.valueOf(server)).setServerAddress("2001").setServiceName("DistLedger").build();
+            RegisterRequest request = RegisterRequest.newBuilder().setQualificator(String.valueOf(server)).setServerAddress(port).setServiceName("DistLedger").build();
             RegisterResponse response = stub.register(request);
+        }
+        catch (StatusRuntimeException e) {
+            System.out.println("ERROR\n" + e.getStatus().getDescription());
+        }
+    }
+
+    public LookupResponse Lookup(char server) {
+        try {
+            LookupRequest request = LookupRequest.newBuilder().setQualificator(String.valueOf(server)).setServiceName("DistLedger").build();
+            LookupResponse response = stub.lookup(request);
+            return response;
+        }
+        catch (StatusRuntimeException e) {
+            System.out.println("ERROR\n" + e.getStatus().getDescription());
+            return null;
+        }
+    }
+
+    public void Delete(char server, String port) {
+        try {
+            DeleteRequest request = DeleteRequest.newBuilder().setServerAddress(port).setServiceName("DistLedger").build();
+            DeleteResponse response = stub.delete(request);
+        }
+        catch (StatusRuntimeException e) {
+            System.out.println("ERROR\n" + e.getStatus().getDescription());
+        }
+    }
+
+    public void PropagateState(LedgerState state) {
+        try {
+            LookupRequest lookupRequest = LookupRequest.newBuilder().setQualificator("B").setServiceName("DistLedger").build();
+            LookupResponse lookupResponse = stub.lookup(lookupRequest);
+            String targetPropagate = hostname + ":" + lookupResponse.getServerAddress(0);
+            ManagedChannel channelPropagate = ManagedChannelBuilder.forTarget(targetPropagate).usePlaintext().build();
+            DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stubPropagate = DistLedgerCrossServerServiceGrpc.newBlockingStub(channelPropagate);
+            PropagateStateRequest request = PropagateStateRequest.newBuilder().setState(state).build();
+            PropagateStateResponse response = stubPropagate.propagateState(request);
+            channelPropagate.shutdown();
         }
         catch (StatusRuntimeException e) {
             System.out.println("ERROR\n" + e.getStatus().getDescription());

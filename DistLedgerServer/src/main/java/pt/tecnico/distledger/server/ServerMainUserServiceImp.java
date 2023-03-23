@@ -9,8 +9,18 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountR
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
+import pt.tecnico.distledger.server.domain.operation.CreateOp;
+import pt.tecnico.distledger.server.domain.operation.DeleteOp;
+import pt.tecnico.distledger.server.domain.operation.Operation;
+import pt.tecnico.distledger.server.domain.operation.TransferOp;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.distledger.server.domain.ServerState;
+import pt.tecnico.distledger.server.grpc.DistLedgerService;
+import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
+import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
+
+import java.util.*;
+
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.UNAVAILABLE;
 import static io.grpc.Status.FAILED_PRECONDITION;
@@ -18,9 +28,11 @@ import static io.grpc.Status.UNKNOWN;
 
 public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBase {
   private ServerState serverState;
+  private DistLedgerService distLedgerService;
 
-  public ServerMainUserServiceImp(ServerState s) {
+  public ServerMainUserServiceImp(ServerState s, DistLedgerService dls) {
     this.serverState = s;
+    this.distLedgerService = dls;
   }
 
     @Override
@@ -76,7 +88,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
       else{
         serverState.debug("User id is valid.");
-        retVal = serverState.createAddAccount(id);
+        retVal = serverState.createAddAccount(id, false);
         serverState.debug("Checking if server is active and then if account already exists...");
 
         if (retVal == 0) {
@@ -84,7 +96,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           serverState.debug("Creating account for user.");
 
           CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
-
+          distLedgerService.PropagateState(makeLedgerState());
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
@@ -119,7 +131,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
       else {
         serverState.debug("User id is valid.");
-        int result = serverState.deleteAccount(id);
+        int result = serverState.deleteAccount(id, false);
         serverState.debug("Checking if server is active and then if account exists and if it has money...");
 
         if (result == 0) {
@@ -127,7 +139,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           serverState.debug("Deleting account.");
 
           DeleteAccountResponse response = DeleteAccountResponse.getDefaultInstance();
-
+          distLedgerService.PropagateState(makeLedgerState());
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
@@ -168,7 +180,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
       else{
         serverState.debug("User ids are valid.");
-        int result = serverState.transferTo(from, to, amount);
+        int result = serverState.transferTo(from, to, amount, false);
         serverState.debug("Checking if server is active and then if transfer is valid...");
 
         if (result == 0) {
@@ -176,6 +188,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           serverState.debug("Transferring money.");
           
           TransferToResponse response = TransferToResponse.getDefaultInstance();
+          distLedgerService.PropagateState(makeLedgerState());
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
@@ -207,5 +220,34 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
         }
       }
+    }
+
+    public DistLedgerCommonDefinitions.LedgerState makeLedgerState() {
+      List<Operation> ledgerOps = serverState.getLedgerState();
+      List<DistLedgerCommonDefinitions.Operation> convertedOps = new ArrayList<>();
+      for(int i = 0; i < ledgerOps.size(); i++) {
+        Operation op = ledgerOps.get(i);
+        DistLedgerCommonDefinitions.Operation newOp;
+  
+        // check each type of operation
+        if(op instanceof TransferOp) {
+          TransferOp transferOp = (TransferOp) op;
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(transferOp.getAccount()).setDestUserId(transferOp.getDestAccount()).setAmount(transferOp.getAmount()).build();
+        }
+        else if(op instanceof CreateOp) {
+          CreateOp createOp = (CreateOp) op;
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(createOp.getAccount()).build();
+        }
+        else if(op instanceof DeleteOp) {
+          DeleteOp deleteOp = (DeleteOp) op;
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(deleteOp.getAccount()).build();
+        }
+        else {
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_UNSPECIFIED).build();
+        }
+  
+        convertedOps.add(newOp);
+      }
+      return DistLedgerCommonDefinitions.LedgerState.newBuilder().addAllLedger(convertedOps).build();
     }
 }
