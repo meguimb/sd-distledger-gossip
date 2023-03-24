@@ -41,7 +41,7 @@ public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServic
         DistLedgerCommonDefinitions.Operation op = ledger.get(i);
         Operation newOp;
 
-        // check anc convert each type of operation
+        // check and convert each type of operation
         if (op.getType().equals(OperationType.OP_TRANSFER_TO)){
           newOp = new TransferOp(op.getUserId(), op.getDestUserId(), op.getAmount());
         }
@@ -57,14 +57,18 @@ public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServic
   
         convertedOps.add(newOp);
       }
-
-      state.propagateState(convertedOps);
-
-      PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();
       state.info("Request to propagate state of server.");
-      state.debug("Propagating server's state");
+      int result = state.propagateState(convertedOps);
+      if (result == -1) {
+        state.debug("Secondary server is deactivated");
+        responseObserver.onError(new RuntimeException("Secondary server is deactivated"));
+      }
+      else {
+        state.info("State propagated successfully");
+        PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();
 
-      responseObserver.onNext(response);
-      responseObserver.onCompleted();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+      }
     }
 }

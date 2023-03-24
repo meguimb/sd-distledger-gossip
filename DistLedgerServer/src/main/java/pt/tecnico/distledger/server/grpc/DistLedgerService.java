@@ -71,7 +71,7 @@ public class DistLedgerService {
         }
     }
 
-    public void PropagateState(LedgerState state) {
+    public int PropagateState(LedgerState state) {
         try {
             LookupRequest lookupRequest = LookupRequest.newBuilder().setQualificator("B").setServiceName("DistLedger").build();
             LookupResponse lookupResponse = stub.lookup(lookupRequest);
@@ -81,9 +81,11 @@ public class DistLedgerService {
             PropagateStateRequest request = PropagateStateRequest.newBuilder().setState(state).build();
             PropagateStateResponse response = stubPropagate.propagateState(request);
             channelPropagate.shutdown();
+            return 0;
         }
         catch (StatusRuntimeException e) {
             System.out.println("ERROR\n" + e.getStatus().getDescription());
+            return -1;
         }
     }
 

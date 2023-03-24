@@ -183,10 +183,11 @@ public class ServerState {
     }
 
     public int propagateState(List<Operation> newLedger){
-        // reset everything
+        if (is_active == false)
+            return -1;
         List<Operation> temp = newLedger;
         Operation parentOp;
-
+        // reset everything
         this.ledger = new ArrayList<>();
         this.accountsMap = new HashMap<String, Account>();
         is_active = true;
