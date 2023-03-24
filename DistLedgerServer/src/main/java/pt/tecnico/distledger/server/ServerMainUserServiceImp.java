@@ -114,6 +114,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           distLedgerService.PropagateState(makeLedgerState());
         } catch (SecondaryServerNotActiveException e) {
           responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
+          return;
         }
 
         try {
@@ -169,6 +170,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           distLedgerService.PropagateState(makeLedgerState());
         } catch (SecondaryServerNotActiveException e) {
           responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
+          return;
         }
 
         try { 
@@ -228,6 +230,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           distLedgerService.PropagateState(makeLedgerState());
         } catch (SecondaryServerNotActiveException e) {
           responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
+          return;
         }
 
         try {
