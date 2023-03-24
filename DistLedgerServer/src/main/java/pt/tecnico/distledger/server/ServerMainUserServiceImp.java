@@ -44,15 +44,19 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       serverState.info("Balance request received from user " + id + ".");
       serverState.debug("Checking if user id is valid...");
 
+      // check if id argument is valid
       if (id == null){
         serverState.debug("User id is invalid.");
         responseObserver.onError(INVALID_ARGUMENT.withDescription("User id is invalid.").asRuntimeException());
       }
       else{
         serverState.debug("User id is valid.");
+
+        // do balance function if argument of id is valid
         value = serverState.balance(id);
         serverState.debug("Checking if server is active and then if account exists...");
 
+        // check for errors
         if (value == -2){
           serverState.debug("Server is not active.");
           responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
@@ -61,7 +65,8 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           serverState.debug("Server is active but account doesn't exist.");
           responseObserver.onError(INVALID_ARGUMENT.withDescription("Account for this user doesn't exist.").asRuntimeException());
         }
-        else{
+        else {
+          // return value of balance is valid
           serverState.debug("Server is active and account exists.");
           serverState.debug("Returning balance to user.");
 
@@ -82,16 +87,21 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       serverState.info("Create account request received from user " + id + ".");
       serverState.debug("Checking if user id is valid...");
 
+      // check if id argument is valid
       if (id == null){
         serverState.debug("User id is invalid.");
         responseObserver.onError(INVALID_ARGUMENT.withDescription("You can't create an account with this id.").asRuntimeException());
       }
       else{
         serverState.debug("User id is valid.");
+
+        // check if we're able to propagate to secondary server before creating account
         int canPropagate = distLedgerService.PropagateState(makeLedgerState());
+
         if (canPropagate == -1)
           responseObserver.onError(UNAVAILABLE.withDescription("Secondary server is deactivated.").asRuntimeException());
         else {
+          // do create account and check for errors
           retVal = serverState.createAddAccount(id, false);
           serverState.debug("Checking if server is active and then if account already exists...");
 
@@ -99,6 +109,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
             serverState.debug("Server is active and account doesn't exist.");
             serverState.debug("Creating account for user.");
 
+            // setup response and propagate to secondary server
             CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
             distLedgerService.PropagateState(makeLedgerState());
             responseObserver.onNext(response);
@@ -130,16 +141,20 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       serverState.info("Delete account request received from user " + id + ".");
       serverState.debug("Checking if user id is valid...");
 
+      // check for valid id argument in request
       if (id == null){
         serverState.debug("User id is invalid.");
         responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to delete account.").asRuntimeException());
       }
       else {
         serverState.debug("User id is valid.");
+
+        // check if we're able to propagate operation to secondary server
         int canPropagate = distLedgerService.PropagateState(makeLedgerState());
         if (canPropagate == -1)
           responseObserver.onError(UNAVAILABLE.withDescription("Secondary server is deactivated.").asRuntimeException());
         else {
+          // able to propagate, do delete account operation and check errors
           int result = serverState.deleteAccount(id, false);
           serverState.debug("Checking if server is active and then if account exists and if it has money...");
 
@@ -177,6 +192,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
 
     @Override
     public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> responseObserver) {
+      // get request arguments
       String from = request.getAccountFrom();
       String to = request.getAccountTo();
       int amount = request.getAmount();
@@ -184,16 +200,20 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       serverState.info("Transfer request received of " + amount + " from " + from + " to " + to + ".");
       serverState.debug("Checking if user ids are valid...");
 
+      // check for invalid arguments in the request
       if (from == null || to == null){
         serverState.debug("User ids are invalid.");
         responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to transfer.").asRuntimeException());
       }
       else{
         serverState.debug("User ids are valid.");
+
+        // check if we're able to propagate transferTo operation to secondary server
         int canPropagate = distLedgerService.PropagateState(makeLedgerState());
         if (canPropagate == -1)
           responseObserver.onError(UNAVAILABLE.withDescription("Secondary server is deactivated.").asRuntimeException());
         else {
+          // able to propagate, do transferTo operation and check for errors
           int result = serverState.transferTo(from, to, amount, false);
           serverState.debug("Checking if server is active and then if transfer is valid...");
 
@@ -201,6 +221,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
             serverState.debug("Server is active and transfer is valid.");
             serverState.debug("Transferring money.");
             
+            // set response and propagate with ledgerstate operations
             TransferToResponse response = TransferToResponse.getDefaultInstance();
             distLedgerService.PropagateState(makeLedgerState());
             responseObserver.onNext(response);
@@ -237,9 +258,17 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
     }
 
+    /*
+     * makeLedgerState is a function that returns a LedgerState, a list
+     * of ledger operations converted from disledgerserver.domain.Operation
+     * type to proto's Operation type to be set in the service response
+     */
     public DistLedgerCommonDefinitions.LedgerState makeLedgerState() {
+      // get LedgerState
       List<Operation> ledgerOps = serverState.getLedgerState();
       List<DistLedgerCommonDefinitions.Operation> convertedOps = new ArrayList<>();
+
+      // for each operation in LedgerState, convert it to Operation type
       for(int i = 0; i < ledgerOps.size(); i++) {
         Operation op = ledgerOps.get(i);
         DistLedgerCommonDefinitions.Operation newOp;
@@ -263,6 +292,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
   
         convertedOps.add(newOp);
       }
+      // return LedgerState, list of proto's Operation
       return DistLedgerCommonDefinitions.LedgerState.newBuilder().addAllLedger(convertedOps).build();
     }
 }

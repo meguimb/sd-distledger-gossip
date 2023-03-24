@@ -4,25 +4,16 @@ import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLe
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateResponse;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterResponse;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServiceGrpc.NamingServiceImplBase;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteResponse;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServiceGrpc;
-import io.grpc.stub.StreamObserver;
-import pt.tecnico.distledger.server.domain.ServerState;
-import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.LedgerState;
-import pt.tecnico.distledger.server.domain.operation.Operation;
-import pt.tecnico.distledger.server.domain.operation.CreateOp;
-import pt.tecnico.distledger.server.domain.operation.DeleteOp;
-import pt.tecnico.distledger.server.domain.operation.TransferOp;
-import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
-import java.util.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 
 public class DistLedgerService {
 
@@ -33,9 +24,13 @@ public class DistLedgerService {
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
     public DistLedgerService(String host) {
+        // setup host name and port for naming server access
         target = host + ":5001";
         hostname = host;
+        // create channel for naming server communication
         channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+
+        // create stub
         stub = NamingServiceGrpc.newBlockingStub(channel);
     }
     
@@ -73,13 +68,22 @@ public class DistLedgerService {
 
     public int PropagateState(LedgerState state) {
         try {
+            // call lookup to find host and port for DistLedger service
             LookupRequest lookupRequest = LookupRequest.newBuilder().setQualificator("B").setServiceName("DistLedger").build();
             LookupResponse lookupResponse = stub.lookup(lookupRequest);
+
+            // find and set target to propagate to
             String targetPropagate = hostname + ":" + lookupResponse.getServerAddress(0);
+
+            // setup channel and stub to propagate to
             ManagedChannel channelPropagate = ManagedChannelBuilder.forTarget(targetPropagate).usePlaintext().build();
             DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stubPropagate = DistLedgerCrossServerServiceGrpc.newBlockingStub(channelPropagate);
+            
+            // call propagate service with created stub
             PropagateStateRequest request = PropagateStateRequest.newBuilder().setState(state).build();
             PropagateStateResponse response = stubPropagate.propagateState(request);
+
+            // close channel
             channelPropagate.shutdown();
             return 0;
         }

@@ -42,16 +42,21 @@ public class ServerMain {
 
 		distLedgerService.Register(qualificator, String.valueOf(port));
 
-		// create server with both services and start it
+		// create server with all services
 		Server server = ServerBuilder.forPort(port).addService(impUser).addService(impAdmin).addService(impCrossServer).build();
+
+		// start server
 		server.start();
 		System.out.printf("Server %c started at port %d\n", qualificator, port);
+
+		// check for shutdown of server and delete server entries
 		System.out.println("Press enter to shutdown");
         System.in.read();
 		distLedgerService.Delete(qualificator, String.valueOf(port));
+
+		// close channel and server
 		distLedgerService.close();
         server.shutdown();
-
     }
 	
 }

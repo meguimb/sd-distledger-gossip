@@ -1,12 +1,6 @@
 package pt.tecnico.distledger.server;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.PropagateStateResponse;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterRequest;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.RegisterResponse;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRequest;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteResponse;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.distledger.server.domain.ServerState;
@@ -20,8 +14,6 @@ import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.Operat
 import java.util.*;
 
 public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceImplBase {
-  // will this server have server properties to propagate between them?
-  // what about the constructor?
 
   private ServerState state;
 
@@ -31,7 +23,7 @@ public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServic
 
     @Override
     public void propagateState(PropagateStateRequest request, StreamObserver<PropagateStateResponse> responseObserver) {
-      // ledgerState is a list of Operations
+      // get llist of ledger operations
       LedgerState prop_state = request.getState();
       List<DistLedgerCommonDefinitions.Operation> ledger = prop_state.getLedgerList();
       List<Operation> convertedOps = new ArrayList<>();
@@ -58,6 +50,8 @@ public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServic
         convertedOps.add(newOp);
       }
       state.info("Request to propagate state of server.");
+
+      // do propagation and check for errors
       int result = state.propagateState(convertedOps);
       if (result == -1) {
         state.debug("Secondary server is deactivated");

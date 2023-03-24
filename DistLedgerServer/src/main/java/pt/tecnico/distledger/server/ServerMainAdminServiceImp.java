@@ -17,7 +17,6 @@ import pt.tecnico.distledger.server.domain.operation.DeleteOp;
 import pt.tecnico.distledger.server.domain.operation.TransferOp;
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
-import io.grpc.Status;
 
 import java.util.*;
 
@@ -62,6 +61,7 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
     state.info("Request to get ledger state received from admin");
     state.debug("Converting ledger state to protobuf format...");
 
+    // for each operation in ledger, convert it to proto's Operation
     for(int i = 0; i < ledgerOps.size(); i++) {
       Operation op = ledgerOps.get(i);
       DistLedgerCommonDefinitions.Operation newOp;
@@ -86,6 +86,8 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
       convertedOps.add(newOp);
     }
     state.debug("Returning ledger state to admin");
+
+    // return list of ledger operations in proto's operation
     DistLedgerCommonDefinitions.LedgerState ledgerState = DistLedgerCommonDefinitions.LedgerState.newBuilder().addAllLedger(convertedOps).build();
     getLedgerStateResponse response = getLedgerStateResponse.newBuilder().setLedgerState(ledgerState).build();
 
