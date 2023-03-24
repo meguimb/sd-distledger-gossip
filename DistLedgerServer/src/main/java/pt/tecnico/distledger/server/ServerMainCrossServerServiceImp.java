@@ -13,6 +13,8 @@ import pt.tecnico.distledger.server.domain.operation.TransferOp;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 import java.util.*;
 
+import pt.tecnico.distledger.server.domain.exception.SecondaryServerNotActiveException;
+
 public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceImplBase {
 
   private ServerState state;
@@ -52,17 +54,17 @@ public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServic
       state.info("Request to propagate state of server.");
 
       // do propagation and check for errors
-      int result = state.propagateState(convertedOps);
-      if (result == -1) {
-        state.debug("Secondary server is deactivated");
-        responseObserver.onError(new RuntimeException("Secondary server is deactivated"));
-      }
-      else {
+      try {
+        int result = state.propagateState(convertedOps);
+
         state.info("State propagated successfully");
         PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+      } catch (Exception e) {
+        state.debug("Cannot perform propagation when secondary server is deactivated.");
+        responseObserver.onError(new RuntimeException("Secondary server is deactivated"));
       }
     }
 }

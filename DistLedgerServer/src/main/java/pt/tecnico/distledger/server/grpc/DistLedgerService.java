@@ -15,6 +15,8 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
+import pt.tecnico.distledger.server.domain.exception.SecondaryServerNotActiveException;
+
 public class DistLedgerService {
 
     public static String target;
@@ -66,7 +68,7 @@ public class DistLedgerService {
         }
     }
 
-    public int PropagateState(LedgerState state) {
+    public int PropagateState(LedgerState state) throws SecondaryServerNotActiveException{
         try {
             // call lookup to find host and port for DistLedger service
             LookupRequest lookupRequest = LookupRequest.newBuilder().setQualificator("B").setServiceName("DistLedger").build();
@@ -89,7 +91,7 @@ public class DistLedgerService {
         }
         catch (StatusRuntimeException e) {
             System.out.println("ERROR\n" + e.getStatus().getDescription());
-            return -1;
+            throw new SecondaryServerNotActiveException();
         }
     }
 

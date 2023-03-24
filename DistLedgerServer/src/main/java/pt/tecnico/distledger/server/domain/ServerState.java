@@ -8,7 +8,16 @@ import pt.tecnico.distledger.server.grpc.DistLedgerService;
 import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.tecnico.distledger.server.domain.Account;
 
-
+import pt.tecnico.distledger.server.domain.exception.ServerNotActiveException;
+import pt.tecnico.distledger.server.domain.exception.SecondaryServerException;
+import pt.tecnico.distledger.server.domain.exception.TransferToAndFromSameAccountException;
+import pt.tecnico.distledger.server.domain.exception.InvalidAmountException;
+import pt.tecnico.distledger.server.domain.exception.AccountDoesNotExistException;
+import pt.tecnico.distledger.server.domain.exception.InvalidTransferOperationException;
+import pt.tecnico.distledger.server.domain.exception.DeleteInvalidAccountException;
+import pt.tecnico.distledger.server.domain.exception.DeleteAccountWithMoneyException;
+import pt.tecnico.distledger.server.domain.exception.AccountAlreadyExistsException;
+import pt.tecnico.distledger.server.domain.exception.SecondaryServerNotActiveException;
 public class ServerState {
 
 	private List<Operation> ledger;
@@ -29,19 +38,20 @@ public class ServerState {
     }
 
     // operação de leitura
-    public int balance(String id) {
+    public int balance(String id) throws ServerNotActiveException {
         Account account;    
         int value;
 
-        // return -2 if server not active
+        // error if server not active
         if(is_active == false)
-            return -2;
+            throw new ServerNotActiveException();
         
         account = accountsMap.get(id);
-        // return -1 if account not active
-        if (account == null){
-            return -1;
-        }
+
+        // error if account doesn't exist
+        if (account == null)
+            throw new AccountDoesNotExistException(id);
+        
         value = account.getBalance();
         return value;
     }
@@ -90,11 +100,14 @@ public class ServerState {
     }
 
     // operação de escrita
-    public int createAddAccount(String id, Boolean isPropagating){
+    public int createAddAccount(String id, Boolean isPropagating) throws ServerNotActiveException, SecondaryServerException, AccountAlreadyExistsException {
+        // if server is not active, don't perform operation
         if(is_active == false)
-            return -2;
+            throw new ServerNotActiveException();
+
+        // if server is a secondary server, don't perform operation
         if(qualificator == 'B' && isPropagating == false)
-            return -3;
+            throw new SecondaryServerException();
 
         Account newAccount = new Account(id);
 
@@ -103,34 +116,36 @@ public class ServerState {
             addOperation(new CreateOp(id));
             return 0;
         }
-        return -1;
+        throw new AccountAlreadyExistsException();
     }
 
     // operação de escrita
-    public int deleteAccount(String id, Boolean isPropagating){
+    public int deleteAccount(String id, Boolean isPropagating) throws ServerNotActiveException, SecondaryServerException {
 
         // if server is not active, don't perform operation
         if(is_active == false)
-            return -2;
+            throw new ServerNotActiveException();
+
+        // if server is a secondary server, don't perform operation
         if(qualificator == 'B' && isPropagating == false)
-            return -4;
+            throw new SecondaryServerException();
 
         // check if account is valid
         Account a = getAccountsMap().get(id);
         if (a == null){
-            return -1;
+            throw new DeleteInvalidAccountException();
         }
 
         synchronized (a){
 
             // check if balance is not 0
             if (a.getBalance() != 0){
-                return -3;
+                throw new DeleteAccountWithMoneyException();
             }
 
             // check if we're able to remove account
             if (accountsMap.remove(id) == null){
-                return -1;
+                throw new DeleteInvalidAccountException();
             }
 
             // if delete operation is valid, add it ledger
@@ -140,35 +155,38 @@ public class ServerState {
     }
 
     // operação de escrita 
-    public int transferTo(String from_id, String to_id, int amount, Boolean isPropagating){
+    public int transferTo(String from_id, String to_id, int amount, Boolean isPropagating) throws ServerNotActiveException, SecondaryServerException, 
+    TransferToAndFromSameAccountException, AccountDoesNotExistException, InvalidAmountException, InvalidTransferOperationException {
 
         // if server's not active, don't perform operation
         if (is_active == false){
-            return -2;
+            throw new ServerNotActiveException();
         }
+
+        // if server is a secondary server, don't perform operation
         if(qualificator == 'B' && isPropagating == false)
-            return -6;
+            throw new SecondaryServerException();
 
         // check if trying to transfer to and from the same account
         if (from_id.equals(to_id)){
-            return -3;
+            throw new TransferToAndFromSameAccountException(to_id);
         }
 
         // check if amount to transfer is valid
         if (amount <= 0){
-            return -4;
+            throw new InvalidAmountException(amount);
         }
 
         // check if source account is valid
         Account from = getAccountsMap().get(from_id);
         if (from == null){
-            return -5;
+            throw new AccountDoesNotExistException(from_id);
         }
 
         // check if dest account is valid
         Account to = getAccountsMap().get(to_id);
         if (to == null){
-            return -5;
+            throw new AccountDoesNotExistException(to_id);
         }
 
         // do transferTo operation
@@ -178,13 +196,14 @@ public class ServerState {
                 addOperation(new TransferOp(from.getName(), to.getName(), amount));
                 return 0;
             }
-            return -1;
+            throw new InvalidTransferOperationException();
         }
     }
 
-    public int propagateState(List<Operation> newLedger){
+    public int propagateState(List<Operation> newLedger) throws SecondaryServerNotActiveException {
         if (is_active == false)
-            return -1;
+            throw new SecondaryServerNotActiveException();
+
         List<Operation> temp = newLedger;
         Operation parentOp;
         // reset everything
@@ -203,15 +222,27 @@ public class ServerState {
             // do operation and add it to ledger
             if (parentOp instanceof TransferOp){
                 TransferOp op = (TransferOp) parentOp;
-                transferTo(op.getAccount(), op.getDestAccount(), op.getAmount(), true);
+                try {
+                    transferTo(op.getAccount(), op.getDestAccount(), op.getAmount(), true); 
+                } catch (Exception e) {
+                    throw new SecondaryServerNotActiveException();
+                }
             }
             else if (parentOp instanceof CreateOp){
                 CreateOp op = (CreateOp) parentOp;
-                createAddAccount(op.getAccount(), true);
+                try {
+                    createAddAccount(op.getAccount(), true);
+                } catch (Exception e) {
+                    throw new SecondaryServerNotActiveException();
+                }
             }
             else if (parentOp instanceof DeleteOp){
                 DeleteOp op = (DeleteOp) parentOp;
-                deleteAccount(op.getAccount(), true);
+                try {
+                    deleteAccount(op.getAccount(), true);
+                } catch (Exception e) {
+                    throw new SecondaryServerNotActiveException();
+                }
             }
         }
         return 0;
