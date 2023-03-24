@@ -23,12 +23,14 @@ public class UserService {
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
     public UserService(String host, int port) {
+        // setup host and target for user service
         hostname = host;
         target = host + ":" + port;
         lookup = new NamingServerLookup(target);
     }
 
     public static UserServiceGrpc.UserServiceBlockingStub getStub(String server) {
+        // get channel of server using lookup
         channel = ManagedChannelBuilder.forTarget(hostname + ":" + lookup.lookup(server).getServerAddress(0)).usePlaintext().build();
         UserServiceGrpc.UserServiceBlockingStub stub = UserServiceGrpc.newBlockingStub(channel);
         return stub;
@@ -37,10 +39,16 @@ public class UserService {
     public static void createAccount(String server, String username) {
         debug("Attempting to create account for user " + username + "...");
         try {
+            // create stub for createAccount
             UserServiceGrpc.UserServiceBlockingStub stub = getStub(server);
+
+            // call callAccount service function
             CreateAccountRequest createAccountRequest = CreateAccountRequest.newBuilder().setUserId(username).build();
             CreateAccountResponse createAccountResponse = stub.createAccount(createAccountRequest);
+
+            // close channel
             channel.shutdown();
+            
             System.out.println("OK\n" + createAccountResponse.toString());
             debug("Account created successfully!");
         }
@@ -53,10 +61,14 @@ public class UserService {
     public static void deleteAccount(String server, String username) {
         debug("Attempting to delete " + username + "'s account...");
         try {
+            // create stub for deleteAccount
             UserServiceGrpc.UserServiceBlockingStub stub = getStub(server);
             DeleteAccountRequest deleteAccountRequest = DeleteAccountRequest.newBuilder().setUserId(username).build();
             DeleteAccountResponse deleteAccountResponse = stub.deleteAccount(deleteAccountRequest);
+
+            // close channel of communication
             channel.shutdown();
+
             System.out.println("OK\n" + deleteAccountResponse.toString());
             debug("Account deleted successfully!");
         }
@@ -69,10 +81,16 @@ public class UserService {
     public static void balance(String server, String username) {
         debug("Attempting to get " + username + "'s balance...");
         try {
+            // get stub to do balance
             UserServiceGrpc.UserServiceBlockingStub stub = getStub(server);
+
+            // call balance service function
             BalanceRequest balanceRequest = BalanceRequest.newBuilder().setUserId(username).build();
             BalanceResponse balanceResponse = stub.balance(balanceRequest);
+
+            // close channel of communication
             channel.shutdown();
+
             System.out.println("OK\n" + balanceResponse.getValue() + "\n");
             debug("Balance retrieved successfully!");
         }
@@ -85,10 +103,16 @@ public class UserService {
     public static void transferTo(String server, String from, String to, Integer amount) {
         debug("Attempting to transfer " + amount + " from " + from + " to " + to + "...");
         try {
+            // get stub to do transferTo
             UserServiceGrpc.UserServiceBlockingStub stub = getStub(server);
+
+            // call transferTo service function
             TransferToRequest transferToRequest = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(to).setAmount(amount).build();
             TransferToResponse transferToResponse = stub.transferTo(transferToRequest);
+
+            // close channel of communication
             channel.shutdown();
+
             System.out.println("OK\n" + transferToResponse.toString());
             debug("Transfer successful!");
         }

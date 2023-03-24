@@ -6,7 +6,6 @@ import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServiceGrpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.StatusRuntimeException;
 
 public class NamingServerLookup {
 
@@ -20,6 +19,7 @@ public class NamingServerLookup {
     }
     
     public LookupResponse lookup(String server) {
+        // call lookup service function
         LookupRequest lookupRequest = LookupRequest.newBuilder().setQualificator(server).setServiceName("DistLedger").build();
         LookupResponse lookupResponse = stub.lookup(lookupRequest);
         return lookupResponse;
