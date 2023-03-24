@@ -16,14 +16,18 @@ public class NamingServerState {
         // if service exists, add serverEntry
         if (servicesMap.containsKey(serviceName)){
             serviceEntry = servicesMap.get(serviceName);
-            serverEntry = new ServerEntry(qualificator, serverAddress);
-            serviceEntry.addServerEntry(serverEntry);
+            synchronized (serviceEntry){
+                serverEntry = new ServerEntry(qualificator, serverAddress);
+                serviceEntry.addServerEntry(serverEntry);
+            }
         }
         // otherwise create service 
         else {
             serverEntry = new ServerEntry(qualificator, serverAddress);
-            serviceEntry = new ServiceEntry(serviceName, serverEntry);
-            servicesMap.put(serviceName, serviceEntry);
+            synchronized (this) {
+                serviceEntry = new ServiceEntry(serviceName, serverEntry);
+                servicesMap.put(serviceName, serviceEntry);
+            }
         }
         return 0;
     }
@@ -60,10 +64,14 @@ public class NamingServerState {
     }
 
     public int delete(String serviceName, String serverAddress){
+        int retVal;
         // deletes a server
         ServiceEntry serviceEntry;
         serviceEntry = getServiceEntry(serviceName);
-        return serviceEntry.removeServerEntry(serverAddress);
+        synchronized (serviceEntry){
+            retVal = serviceEntry.removeServerEntry(serverAddress);
+        }
+        return retVal;
     }  
 
     public ServiceEntry getServiceEntry(String serviceName){
