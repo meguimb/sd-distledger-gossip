@@ -132,7 +132,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         }
         catch (ServerNotActiveException e) {
           serverState.debug("Server is not active.");
-          responseObserver.onError(UNAVAILABLE.withDescription("Server is not active.").asRuntimeException());
+          responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
         }
         catch (AccountAlreadyExistsException e) {
           serverState.debug("Server is active but account already exists.");
@@ -167,41 +167,40 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         // check if we're able to propagate operation to secondary server
         try {
           distLedgerService.PropagateState(makeLedgerState());
-
-          try { 
-            serverState.deleteAccount(id, false);
-            serverState.debug("Checking if server is active and then if account exists and if it has money...");
-
-            serverState.debug("Server is active, account exists and has no money.");
-            serverState.debug("Deleting account.");
-
-            DeleteAccountResponse response = DeleteAccountResponse.getDefaultInstance();
-            distLedgerService.PropagateState(makeLedgerState());
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-          }
-          catch (ServerNotActiveException e) {
-            serverState.debug("Server is not active.");
-            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-          }
-          catch (AccountDoesNotExistException e) {
-            serverState.debug("Server is active but account doesn't exist.");
-            responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-          }
-          catch (DeleteAccountWithMoneyException e) {
-            serverState.debug("Server is active, account exists but has money.");
-            responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-          }
-          catch (SecondaryServerException e) {
-            responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-          }
-          catch (Exception e) {
-            serverState.debug("Unknown error occurred.");
-            responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
-          }
-
         } catch (SecondaryServerNotActiveException e) {
           responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
+        }
+
+        try { 
+          serverState.deleteAccount(id, false);
+          serverState.debug("Checking if server is active and then if account exists and if it has money...");
+
+          serverState.debug("Server is active, account exists and has no money.");
+          serverState.debug("Deleting account.");
+
+          DeleteAccountResponse response = DeleteAccountResponse.getDefaultInstance();
+          distLedgerService.PropagateState(makeLedgerState());
+          responseObserver.onNext(response);
+          responseObserver.onCompleted();
+        }
+        catch (ServerNotActiveException e) {
+          serverState.debug("Server is not active.");
+          responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
+        }
+        catch (AccountDoesNotExistException e) {
+          serverState.debug("Server is active but account doesn't exist.");
+          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
+        }
+        catch (DeleteAccountWithMoneyException e) {
+          serverState.debug("Server is active, account exists but has money.");
+          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
+        }
+        catch (SecondaryServerException e) {
+          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
+        }
+        catch (Exception e) {
+          serverState.debug("Unknown error occurred.");
+          responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
         }
       }
     }
@@ -227,53 +226,53 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         // check if we're able to propagate transferTo operation to secondary server
         try {
           distLedgerService.PropagateState(makeLedgerState());
-
-          try {
-            // able to propagate, do transferTo operation and check for errors
-            serverState.transferTo(from, to, amount, false);
-            serverState.debug("Checking if server is active and then if transfer is valid...");
-            
-            serverState.debug("Server is active and transfer is valid.");
-            serverState.debug("Transferring money.");
-            
-            // set response and propagate with ledgerstate operations
-            TransferToResponse response = TransferToResponse.getDefaultInstance();
-            distLedgerService.PropagateState(makeLedgerState());
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-          } 
-          catch (InvalidTransferOperationException e) {
-            serverState.debug("Server is active but transfer is invalid, attempted to transfer more money than the account has.");
-            responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-          } 
-          catch (ServerNotActiveException e) {
-            serverState.debug("Server is not active.");
-            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-          }
-          catch (TransferToAndFromSameAccountException e) {
-            serverState.debug("Server is active but transfer is invalid, attempted to transfer to and from the same account.");
-            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
-          }
-          catch (InvalidAmountException e) {
-            serverState.debug("Server is active but transfer is invalid, attempted to transfer an invalid amount.");
-            responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException()); 
-          }
-          catch (AccountDoesNotExistException e) {
-            serverState.debug("Server is active but transfer is invalid, attempted to transfer to or from an account that doesn't exist.");
-            responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-          }
-          catch (SecondaryServerException e) {
-            serverState.debug("Secondary server cannot perform transferTo operation.");
-            responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-          }
-          catch (Exception e) {
-            serverState.debug("Unknown error occurred.");
-            responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
-          }
-
         } catch (SecondaryServerNotActiveException e) {
           responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
         }
+
+        try {
+          // able to propagate, do transferTo operation and check for errors
+          serverState.transferTo(from, to, amount, false);
+          serverState.debug("Checking if server is active and then if transfer is valid...");
+          
+          serverState.debug("Server is active and transfer is valid.");
+          serverState.debug("Transferring money.");
+          
+          // set response and propagate with ledgerstate operations
+          TransferToResponse response = TransferToResponse.getDefaultInstance();
+          distLedgerService.PropagateState(makeLedgerState());
+          responseObserver.onNext(response);
+          responseObserver.onCompleted();
+        } 
+        catch (InvalidTransferOperationException e) {
+          serverState.debug("Server is active but transfer is invalid, attempted to transfer more money than the account has.");
+          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
+        } 
+        catch (ServerNotActiveException e) {
+          serverState.debug("Server is not active.");
+          responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
+        }
+        catch (TransferToAndFromSameAccountException e) {
+          serverState.debug("Server is active but transfer is invalid, attempted to transfer to and from the same account.");
+          responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+        }
+        catch (InvalidAmountException e) {
+          serverState.debug("Server is active but transfer is invalid, attempted to transfer an invalid amount.");
+          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException()); 
+        }
+        catch (AccountDoesNotExistException e) {
+          serverState.debug("Server is active but transfer is invalid, attempted to transfer to or from an account that doesn't exist.");
+          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
+        }
+        catch (SecondaryServerException e) {
+          serverState.debug("Secondary server cannot perform transferTo operation.");
+          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
+        }
+        catch (Exception e) {
+          serverState.debug("Unknown error occurred.");
+          responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
+        }
+
       }
     }
 
