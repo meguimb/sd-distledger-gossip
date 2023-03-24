@@ -7,15 +7,8 @@ import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRe
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteRequest;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.DeleteResponse;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServiceGrpc;
-import pt.tecnico.distledger.namingserver.ServerEntry;
-import pt.tecnico.distledger.namingserver.ServiceEntry;
-import pt.tecnico.distledger.namingserver.NamingServer;
-import pt.tecnico.distledger.namingserver.NamingServerState;
 
 import io.grpc.stub.StreamObserver;
-import static io.grpc.Status.INVALID_ARGUMENT;
-import static io.grpc.Status.UNAVAILABLE;
-import static io.grpc.Status.FAILED_PRECONDITION;
 import static io.grpc.Status.UNKNOWN;
 import java.util.*;
 
@@ -30,9 +23,6 @@ public class NamingServerServiceImpl extends NamingServiceGrpc.NamingServiceImpl
     public void register(RegisterRequest request, StreamObserver<RegisterResponse> responseObserver) {
         int retVal;
         String serviceName, qualificator, serverAddress;
-        ServerEntry serverEntry;
-        ServiceEntry serviceEntry;
-
         serviceName = request.getServiceName();
         qualificator = request.getQualificator();
         serverAddress = request.getServerAddress();
@@ -67,7 +57,6 @@ public class NamingServerServiceImpl extends NamingServiceGrpc.NamingServiceImpl
 
     @Override
     public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver){
-        int retVal;
         String serviceName, serverAddress;
 
         serviceName = request.getServiceName();

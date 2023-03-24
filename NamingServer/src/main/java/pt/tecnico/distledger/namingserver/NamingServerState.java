@@ -1,12 +1,8 @@
 package pt.tecnico.distledger.namingserver;
 
 import java.util.*;
-import pt.tecnico.distledger.namingserver.ServerEntry;
-import pt.tecnico.distledger.namingserver.ServiceEntry;
 
 public class NamingServerState {
-    // Crie a classe NamingServer que irá guardar toda a informação que o servidor necessita, 
-    // ou seja, contém um mapa que permite associar um nome de um serviço à ServiceEntry correspondente.
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
     private Map<String, ServiceEntry> servicesMap;
 

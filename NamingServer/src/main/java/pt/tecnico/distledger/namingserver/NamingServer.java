@@ -18,7 +18,6 @@ public class NamingServer {
 
     public static void main(String[] args) throws IOException, InterruptedException{
 
-        // $ mvn exec:java -Dexec.args="5001 A"
         System.out.printf("Current Server running is: %s\n", NamingServer.class.getSimpleName());
 
         // create server state
