@@ -86,4 +86,8 @@ public class DistLedgerService {
             System.out.println("ERROR\n" + e.getStatus().getDescription());
         }
     }
+
+    public void close() {
+        channel.shutdown();
+    }
 }

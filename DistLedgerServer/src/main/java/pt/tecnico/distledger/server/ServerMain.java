@@ -15,8 +15,6 @@ import io.grpc.ManagedChannelBuilder;
 public class ServerMain {
 	static String host = "localhost";
 	static String target;
-    static ManagedChannel channel;
-    static DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub blockingStub;
 
     public static void main(String[] args) throws IOException, InterruptedException {
 		// register e lookup do servidor
@@ -33,12 +31,6 @@ public class ServerMain {
 		final int port = Integer.parseInt(args[0]);
 		char qualificator = args[1].charAt(0);
 
-		target = host + ":" + port;
-		channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        blockingStub = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
-
-		// lookup
-
 		// create server state
 		ServerState serverState = new ServerState(qualificator);
 
@@ -54,12 +46,12 @@ public class ServerMain {
 		Server server = ServerBuilder.forPort(port).addService(impUser).addService(impAdmin).addService(impCrossServer).build();
 		server.start();
 		System.out.printf("Server %c started at port %d\n", qualificator, port);
-		server.awaitTermination();
-    }
+		System.out.println("Press enter to shutdown");
+        System.in.read();
+		distLedgerService.Delete(qualificator, String.valueOf(port));
+		distLedgerService.close();
+        server.shutdown();
 
-	
-	public void close() {
-        channel.shutdown();
     }
 	
 }
