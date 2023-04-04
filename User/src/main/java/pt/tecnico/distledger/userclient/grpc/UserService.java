@@ -1,13 +1,13 @@
 package pt.tecnico.distledger.userclient.grpc;
 
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountResponse;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
+//import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
+//import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 
 import io.grpc.ManagedChannel;
@@ -58,7 +58,7 @@ public class UserService {
         }
     }
 
-    public static void deleteAccount(String server, String username) {
+    /* public static void deleteAccount(String server, String username) {
         debug("Attempting to delete " + username + "'s account...");
         try {
             // create stub for deleteAccount
@@ -76,7 +76,7 @@ public class UserService {
             System.out.println("ERROR\n" + e.getStatus().getDescription());
             debug("Failed to delete account!");
         }
-    }
+    } */
 
     public static void balance(String server, String username) {
         debug("Attempting to get " + username + "'s balance...");

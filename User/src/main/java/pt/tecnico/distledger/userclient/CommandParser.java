@@ -36,9 +36,9 @@ public class CommandParser {
                         this.createAccount(line);
                         break;
 
-                    case DELETE_ACCOUNT:
+                    /*case DELETE_ACCOUNT:
                         this.deleteAccount(line);
-                        break;
+                        break;*/
 
                     case TRANSFER_TO:
                         this.transferTo(line);
@@ -81,7 +81,7 @@ public class CommandParser {
         UserService.createAccount(server, username);
     }
 
-    private void deleteAccount(String line){
+    /*private void deleteAccount(String line){
         String[] split = line.split(SPACE);
 
         if (split.length != 3){
@@ -92,7 +92,7 @@ public class CommandParser {
         String username = split[2];
 
         UserService.deleteAccount(server, username);
-    }
+    }*/
 
 
     private void balance(String line){

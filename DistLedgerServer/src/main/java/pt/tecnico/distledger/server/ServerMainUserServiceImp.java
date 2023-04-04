@@ -5,8 +5,8 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceRequest
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.BalanceResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.CreateAccountResponse;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountResponse;
+//import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountRequest;
+//import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToRequest;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResponse;
 import pt.tecnico.distledger.server.domain.operation.CreateOp;
@@ -150,7 +150,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       }
     }
 
-    @Override
+    /*@Override
     public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
       String id = request.getUserId();
 
@@ -205,7 +205,7 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
           responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
         }
       }
-    }
+    }*/
 
     @Override
     public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> responseObserver) {
