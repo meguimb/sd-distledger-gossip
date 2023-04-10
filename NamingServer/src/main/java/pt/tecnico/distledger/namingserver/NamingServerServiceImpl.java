@@ -27,6 +27,7 @@ public class NamingServerServiceImpl extends NamingServiceGrpc.NamingServiceImpl
         qualificator = request.getQualificator();
         serverAddress = request.getServerAddress();
 
+        state.debug("Registering server...");
         retVal = state.addServiceEntry(serviceName, qualificator, serverAddress);
 
         if (retVal == 0){
@@ -47,6 +48,8 @@ public class NamingServerServiceImpl extends NamingServiceGrpc.NamingServiceImpl
 
         serviceName = request.getServiceName();
         qualificator = request.getQualificator();
+
+        state.debug("Lookinp up where this service runs...");
         addresses = state.lookup(serviceName, qualificator);
 
         state.info("obtained list of servers where this service runs");
@@ -62,6 +65,7 @@ public class NamingServerServiceImpl extends NamingServiceGrpc.NamingServiceImpl
         serviceName = request.getServiceName();
         serverAddress = request.getServerAddress();
 
+        state.debug("Deleting server...");
         if (state.delete(serviceName, serverAddress) == 0){
             DeleteResponse response = DeleteResponse.getDefaultInstance();
             responseObserver.onNext(response);
