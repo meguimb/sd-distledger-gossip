@@ -32,7 +32,7 @@ public class ServerMain {
 		char qualificator = args[1].charAt(0);
 
 		// create server state
-		ServerState serverState = new ServerState(qualificator);
+		ServerState serverState = new ServerState();
 
 		// create user and admin service implementations for main server
 		DistLedgerService distLedgerService = new DistLedgerService(host);

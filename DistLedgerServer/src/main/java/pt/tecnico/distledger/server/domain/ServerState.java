@@ -23,13 +23,11 @@ public class ServerState {
 	private List<Operation> ledger;
 	private Map<String, Account> accountsMap;
     private Boolean is_active = true;
-    private char qualificator;
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
-    public ServerState(char qualificator) {
+    public ServerState() {
         this.ledger = new ArrayList<>();
         this.accountsMap = new HashMap<String, Account>();
-        this.qualificator = qualificator;
         
         // add broker user
         Account broker = new Account("broker");
@@ -105,10 +103,6 @@ public class ServerState {
         if(is_active == false)
             throw new ServerNotActiveException();
 
-        // if server is a secondary server, don't perform operation
-        if(qualificator == 'B' && isPropagating == false)
-            throw new SecondaryServerException();
-
         Account newAccount = new Account(id);
 
         // check if addOperation is valid and add it to ledger
@@ -125,10 +119,6 @@ public class ServerState {
         // if server is not active, don't perform operation
         if(is_active == false)
             throw new ServerNotActiveException();
-
-        // if server is a secondary server, don't perform operation
-        if(qualificator == 'B' && isPropagating == false)
-            throw new SecondaryServerException();
 
         // check if account is valid
         Account a = getAccountsMap().get(id);
@@ -162,10 +152,6 @@ public class ServerState {
         if (is_active == false){
             throw new ServerNotActiveException();
         }
-
-        // if server is a secondary server, don't perform operation
-        if(qualificator == 'B' && isPropagating == false)
-            throw new SecondaryServerException();
 
         // check if trying to transfer to and from the same account
         if (from_id.equals(to_id)){
