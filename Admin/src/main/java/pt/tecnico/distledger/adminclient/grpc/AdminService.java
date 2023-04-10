@@ -6,6 +6,8 @@ import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.DeactivateRe
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.DeactivateResponse;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateRequest;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateResponse;
+import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.GossipRequest;
+import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.GossipResponse;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
 
 import io.grpc.ManagedChannel;
@@ -99,6 +101,28 @@ public class AdminService {
             debug("Failed to get ledger state!");
         }
     }
+
+    public static void gossip(String server) {
+        debug("Attempting to gossip");
+        try {
+            // create stub for gossip
+            AdminServiceGrpc.AdminServiceBlockingStub stub = getStub(server);
+
+            // call gossip with service functions
+            GossipRequest request = GossipRequest.getDefaultInstance();
+            GossipResponse response = stub.gossip(request);
+            System.out.println("OK\n" + response.toString());
+
+            // close channel
+            channel.shutdown();
+            debug("Gossip successful!");
+        }
+        catch(StatusRuntimeException e) {
+            System.out.println("ERROR\n" + e.getStatus().getDescription());
+            debug("Failed to gossip!");
+        }
+    }
+    
 
     private static void debug(String message) {
         if (DEBUG_FLAG) {

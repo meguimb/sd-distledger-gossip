@@ -96,10 +96,16 @@ public class CommandParser {
         AdminService.getLedgerState(server);
     }
 
-    @SuppressWarnings("unused")
     private void gossip(String line){
-        /* TODO Phase-3 */
-        System.out.println("TODO: implement gossip command (only for Phase-3)");
+        String[] split = line.split(SPACE);
+
+        if (split.length != 2){
+            this.printUsage();
+            return;
+        }
+        String server = split[1];
+
+        AdminService.gossip(server);
     }
     private void printUsage() {
         System.out.println("Usage:\n" +
