@@ -10,6 +10,11 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.TransferToResp
 //import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.DeleteAccountResponse;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.google.protobuf.Timestamp;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
@@ -20,6 +25,7 @@ public class UserService {
     public static String hostname;
     static NamingServerLookup lookup;
     public static ManagedChannel channel;
+    public static List<Integer> prevTS;
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
     public UserService(String host, int port) {
@@ -27,6 +33,10 @@ public class UserService {
         hostname = host;
         target = host + ":" + port;
         lookup = new NamingServerLookup(target);
+        prevTS = new ArrayList<Integer>();
+        prevTS.add(0);
+        prevTS.add(0);
+        prevTS.add(0);
     }
 
     public static UserServiceGrpc.UserServiceBlockingStub getStub(String server) {
@@ -43,11 +53,17 @@ public class UserService {
             UserServiceGrpc.UserServiceBlockingStub stub = getStub(server);
 
             // call callAccount service function
-            CreateAccountRequest createAccountRequest = CreateAccountRequest.newBuilder().setUserId(username).build();
+            CreateAccountRequest createAccountRequest = CreateAccountRequest.newBuilder().setUserId(username).addAllPrevTS(prevTS).build();
             CreateAccountResponse createAccountResponse = stub.createAccount(createAccountRequest);
 
             // close channel
             channel.shutdown();
+
+            //update prevTS
+            List<Integer> TS = createAccountResponse.getTSList();
+            prevTS.set(0, TS.get(0));
+            prevTS.set(1, TS.get(1));
+            prevTS.set(2, TS.get(2));
             
             System.out.println("OK\n" + createAccountResponse.toString());
             debug("Account created successfully!");
@@ -85,7 +101,7 @@ public class UserService {
             UserServiceGrpc.UserServiceBlockingStub stub = getStub(server);
 
             // call balance service function
-            BalanceRequest balanceRequest = BalanceRequest.newBuilder().setUserId(username).build();
+            BalanceRequest balanceRequest = BalanceRequest.newBuilder().setUserId(username).addAllPrevTS(prevTS).build();
             BalanceResponse balanceResponse = stub.balance(balanceRequest);
 
             // close channel of communication
@@ -107,11 +123,17 @@ public class UserService {
             UserServiceGrpc.UserServiceBlockingStub stub = getStub(server);
 
             // call transferTo service function
-            TransferToRequest transferToRequest = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(to).setAmount(amount).build();
+            TransferToRequest transferToRequest = TransferToRequest.newBuilder().addAllPrevTS(prevTS).setAccountFrom(from).setAccountTo(to).setAmount(amount).build();
             TransferToResponse transferToResponse = stub.transferTo(transferToRequest);
 
             // close channel of communication
             channel.shutdown();
+
+            //update prevTS
+            List<Integer> TS = transferToResponse.getTSList();
+            prevTS.set(0, TS.get(0));
+            prevTS.set(1, TS.get(1));
+            prevTS.set(2, TS.get(2));
 
             System.out.println("OK\n" + transferToResponse.toString());
             debug("Transfer successful!");

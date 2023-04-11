@@ -51,7 +51,13 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
 
   @Override
   public void gossip(GossipRequest request, StreamObserver<GossipResponse> responseObserver) {
-    // TODO - fase 3
+    GossipResponse response = GossipResponse.getDefaultInstance();
+    state.info("Request to gossip received from admin");
+    state.debug("Gossiping...");
+    state.gossip();
+
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
   }
 
   @Override

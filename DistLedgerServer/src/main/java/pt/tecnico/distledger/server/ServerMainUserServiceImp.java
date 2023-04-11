@@ -109,25 +109,27 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       else {
         serverState.debug("User id is valid.");
 
-        // check if we're able to propagate to secondary server before creating account
-        try {
-          distLedgerService.PropagateState(makeLedgerState());
-        } catch (SecondaryServerNotActiveException e) {
-          responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-          return;
+        // check if server timestamp is higher than the one received
+        List<Integer> ts = distLedgerService.getTS();
+        for (int i = 0; i < ts.size(); i++) {
+          if (ts.get(i) < request.getPrevTS(i)) {
+            serverState.debug("Client has higher timestamp.");
+            responseObserver.onError(FAILED_PRECONDITION.withDescription("Server has lower timestamp").asRuntimeException());
+            return;
+          }
         }
 
         try {
           // do create account and check for errors
-          serverState.createAddAccount(id, false);
           serverState.debug("Checking if server is active and then if account already exists...");
+          serverState.createAddAccount(id, false);
+          distLedgerService.updateTS();
 
           serverState.debug("Server is active and account doesn't exist.");
           serverState.debug("Creating account for user.");
 
           // setup response and propagate to secondary server
-          CreateAccountResponse response = CreateAccountResponse.getDefaultInstance();
-          distLedgerService.PropagateState(makeLedgerState());
+          CreateAccountResponse response = CreateAccountResponse.newBuilder().addAllTS(distLedgerService.getTS()).build();
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
@@ -225,25 +227,27 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       else{
         serverState.debug("User ids are valid.");
 
-        // check if we're able to propagate transferTo operation to secondary server
-        try {
-          distLedgerService.PropagateState(makeLedgerState());
-        } catch (SecondaryServerNotActiveException e) {
-          responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-          return;
+        // check if server timestamp is higher than the one received
+        List<Integer> ts = distLedgerService.getTS();
+        for (int i = 0; i < ts.size(); i++) {
+          if (ts.get(i) < request.getPrevTS(i)) {
+            serverState.debug("Client has higher timestamp.");
+            responseObserver.onError(FAILED_PRECONDITION.withDescription("Server has lower timestamp").asRuntimeException());
+            return;
+          }
         }
 
         try {
           // able to propagate, do transferTo operation and check for errors
           serverState.transferTo(from, to, amount, false);
           serverState.debug("Checking if server is active and then if transfer is valid...");
+          distLedgerService.updateTS();
           
           serverState.debug("Server is active and transfer is valid.");
           serverState.debug("Transferring money.");
           
           // set response and propagate with ledgerstate operations
-          TransferToResponse response = TransferToResponse.getDefaultInstance();
-          distLedgerService.PropagateState(makeLedgerState());
+          TransferToResponse response = TransferToResponse.newBuilder().addAllTS(distLedgerService.getTS()).build();
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         } 

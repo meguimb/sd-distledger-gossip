@@ -14,6 +14,7 @@ import java.util.*;
 
 public class NamingServerServiceImpl extends NamingServiceGrpc.NamingServiceImplBase {
     private NamingServerState state;
+    public int timestampIndex = 0;
 
     public NamingServerServiceImpl(NamingServerState state) {
         this.state = state;
@@ -32,7 +33,8 @@ public class NamingServerServiceImpl extends NamingServiceGrpc.NamingServiceImpl
 
         if (retVal == 0){
             state.info("Registered serverEntry " + serverAddress + " for service " + serviceName + " with qualificator " + qualificator);
-            RegisterResponse response = RegisterResponse.getDefaultInstance();
+            RegisterResponse response = RegisterResponse.newBuilder().setTimestampId(timestampIndex).build();
+            timestampIndex++;
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
