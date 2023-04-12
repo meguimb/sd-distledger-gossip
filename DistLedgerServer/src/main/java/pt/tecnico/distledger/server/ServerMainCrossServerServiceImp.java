@@ -37,16 +37,16 @@ public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServic
 
         // check and convert each type of operation
         if (op.getType().equals(OperationType.OP_TRANSFER_TO)){
-          newOp = new TransferOp(op.getUserId(), op.getDestUserId(), op.getAmount());
+          newOp = new TransferOp(op.getUserId(), op.getDestUserId(), op.getAmount(), op.getTSList(), op.getPrevTSList(), op.getStable());
         }
         else if (op.getType().equals(OperationType.OP_CREATE_ACCOUNT)){
-          newOp = new CreateOp(op.getUserId());
+          newOp = new CreateOp(op.getUserId(), op.getTSList(), op.getPrevTSList(), op.getStable());
         }
-        else if (op.getType().equals(OperationType.OP_DELETE_ACCOUNT)){
-          newOp = new DeleteOp(op.getUserId());
-        }
+        /*else if (op.getType().equals(OperationType.OP_DELETE_ACCOUNT)){
+          newOp = new DeleteOp(op.getUserId(), op.getTSList(), op.getPrevTSList(), op.getStable());
+        }*/
         else {
-          newOp = new Operation(op.getUserId());
+          newOp = new Operation(op.getUserId(), op.getTSList(), op.getPrevTSList(), op.getStable());
         }
   
         convertedOps.add(newOp);
@@ -55,7 +55,7 @@ public class ServerMainCrossServerServiceImp extends DistLedgerCrossServerServic
 
       // do propagation and check for errors
       try {
-        int result = state.propagateState(convertedOps);
+        int result = state.propagateState(convertedOps, request.getReplicaTSList());
 
         state.info("State propagated successfully");
         PropagateStateResponse response = PropagateStateResponse.getDefaultInstance();

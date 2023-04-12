@@ -24,6 +24,7 @@ import pt.tecnico.distledger.server.domain.exception.SecondaryServerNotActiveExc
 public class DistLedgerService {
 
     public static String target;
+    public static char qualificator;
     public static String hostname;
     public static ManagedChannel channel;
     static int timestampIndex;
@@ -31,7 +32,7 @@ public class DistLedgerService {
     static NamingServiceGrpc.NamingServiceBlockingStub stub;
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
-    public DistLedgerService(String host) {
+    public DistLedgerService(String host, char q) {
         TS = new ArrayList<Integer>();
         TS.add(0);
         TS.add(0);
@@ -39,6 +40,7 @@ public class DistLedgerService {
         // setup host name and port for naming server access
         target = host + ":5001";
         hostname = host;
+        qualificator = q;
         // create channel for naming server communication
         channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
@@ -87,10 +89,10 @@ public class DistLedgerService {
         }
     }
 
-    public int PropagateState(LedgerState state) throws SecondaryServerNotActiveException{
+    private void Propagate(LedgerState state, String qualificator) {
         try {
             // call lookup to find host and port for DistLedger service
-            LookupRequest lookupRequest = LookupRequest.newBuilder().setQualificator("B").setServiceName("DistLedger").build();
+            LookupRequest lookupRequest = LookupRequest.newBuilder().setQualificator(qualificator).setServiceName("DistLedger").build();
             LookupResponse lookupResponse = stub.lookup(lookupRequest);
 
             // find and set target to propagate to
@@ -106,11 +108,24 @@ public class DistLedgerService {
 
             // close channel
             channelPropagate.shutdown();
-            return 0;
         }
         catch (StatusRuntimeException e) {
             System.out.println("ERROR\n" + e.getStatus().getDescription());
-            throw new SecondaryServerNotActiveException();
+        }
+    }
+
+    public void PropagateState(LedgerState state) {
+        if (qualificator == 'A') {
+            Propagate(state, "B");
+            Propagate(state, "C");
+        }
+        else if (qualificator == 'B') {
+            Propagate(state, "A");
+            Propagate(state, "C");
+        }
+        else if (qualificator == 'C') {
+            Propagate(state, "A");
+            Propagate(state, "B");
         }
     }
 

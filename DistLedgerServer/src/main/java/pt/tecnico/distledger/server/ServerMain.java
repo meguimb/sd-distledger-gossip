@@ -15,6 +15,7 @@ import io.grpc.ManagedChannelBuilder;
 public class ServerMain {
 	static String host = "localhost";
 	static String target;
+	static char qualificator;
 
     public static void main(String[] args) throws IOException, InterruptedException {
 		// register e lookup do servidor
@@ -29,15 +30,15 @@ public class ServerMain {
 
 		// get port and server qualificator
 		final int port = Integer.parseInt(args[0]);
-		char qualificator = args[1].charAt(0);
+		qualificator = args[1].charAt(0);
 
 		// create server state
 		ServerState serverState = new ServerState();
 
 		// create user and admin service implementations for main server
-		DistLedgerService distLedgerService = new DistLedgerService(host);
-		final BindableService impUser = new ServerMainUserServiceImp(serverState, distLedgerService);
-		final BindableService impAdmin = new ServerMainAdminServiceImp(serverState);
+		DistLedgerService distLedgerService = new DistLedgerService(host, qualificator, serverState);
+		final BindableService impUser = new ServerMainUserServiceImp(serverState);
+		final BindableService impAdmin = new ServerMainAdminServiceImp(serverState, distLedgerService);
 		final BindableService impCrossServer = new ServerMainCrossServerServiceImp(serverState);
 
 		distLedgerService.Register(qualificator, String.valueOf(port));

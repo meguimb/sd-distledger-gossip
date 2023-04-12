@@ -15,6 +15,7 @@ import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.tecnico.distledger.server.domain.operation.CreateOp;
 import pt.tecnico.distledger.server.domain.operation.DeleteOp;
 import pt.tecnico.distledger.server.domain.operation.TransferOp;
+import pt.tecnico.distledger.server.grpc.DistLedgerService;
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 
@@ -22,9 +23,11 @@ import java.util.*;
 
 public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImplBase {
   private ServerState state;
+  private DistLedgerService distLedgerService;
 
-  public ServerMainAdminServiceImp(ServerState s) {
+  public ServerMainAdminServiceImp(ServerState s, DistLedgerService dls) {
     this.state = s;
+    this.distLedgerService = dls;
   }
 
   @Override
@@ -54,7 +57,7 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
     GossipResponse response = GossipResponse.getDefaultInstance();
     state.info("Request to gossip received from admin");
     state.debug("Gossiping...");
-    state.gossip();
+    distLedgerService.PropagateState(makeLedgerState());
 
     responseObserver.onNext(response);
     responseObserver.onCompleted();
@@ -100,4 +103,42 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
     responseObserver.onNext(response);
 	  responseObserver.onCompleted();
   }
+
+  /*
+     * makeLedgerState is a function that returns a LedgerState, a list
+     * of ledger operations converted from disledgerserver.domain.Operation
+     * type to proto's Operation type to be set in the service response
+     */
+    public DistLedgerCommonDefinitions.LedgerState makeLedgerState() {
+      // get LedgerState
+      List<Operation> ledgerOps = state.getLedgerState();
+      List<DistLedgerCommonDefinitions.Operation> convertedOps = new ArrayList<>();
+
+      // for each operation in LedgerState, convert it to Operation type
+      for(int i = 0; i < ledgerOps.size(); i++) {
+        Operation op = ledgerOps.get(i);
+        DistLedgerCommonDefinitions.Operation newOp;
+  
+        // check each type of operation
+        if(op instanceof TransferOp) {
+          TransferOp transferOp = (TransferOp) op;
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(transferOp.getAccount()).setDestUserId(transferOp.getDestAccount()).setAmount(transferOp.getAmount()).build();
+        }
+        else if(op instanceof CreateOp) {
+          CreateOp createOp = (CreateOp) op;
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(createOp.getAccount()).build();
+        }
+        else if(op instanceof DeleteOp) {
+          DeleteOp deleteOp = (DeleteOp) op;
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(deleteOp.getAccount()).build();
+        }
+        else {
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_UNSPECIFIED).build();
+        }
+  
+        convertedOps.add(newOp);
+      }
+      // return LedgerState, list of proto's Operation
+      return DistLedgerCommonDefinitions.LedgerState.newBuilder().addAllLedger(convertedOps).build();
+    }
 }

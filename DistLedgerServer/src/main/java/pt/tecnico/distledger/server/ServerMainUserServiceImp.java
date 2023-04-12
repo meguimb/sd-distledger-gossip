@@ -15,7 +15,6 @@ import pt.tecnico.distledger.server.domain.operation.Operation;
 import pt.tecnico.distledger.server.domain.operation.TransferOp;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.distledger.server.domain.ServerState;
-import pt.tecnico.distledger.server.grpc.DistLedgerService;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 
@@ -25,10 +24,7 @@ import pt.tecnico.distledger.server.domain.exception.TransferToAndFromSameAccoun
 import pt.tecnico.distledger.server.domain.exception.InvalidAmountException;
 import pt.tecnico.distledger.server.domain.exception.AccountDoesNotExistException;
 import pt.tecnico.distledger.server.domain.exception.InvalidTransferOperationException;
-import pt.tecnico.distledger.server.domain.exception.DeleteInvalidAccountException;
-import pt.tecnico.distledger.server.domain.exception.DeleteAccountWithMoneyException;
 import pt.tecnico.distledger.server.domain.exception.AccountAlreadyExistsException;
-import pt.tecnico.distledger.server.domain.exception.SecondaryServerNotActiveException;
 
 import java.util.*;
 
@@ -39,11 +35,9 @@ import static io.grpc.Status.UNKNOWN;
 
 public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBase {
   private ServerState serverState;
-  private DistLedgerService distLedgerService;
 
-  public ServerMainUserServiceImp(ServerState s, DistLedgerService dls) {
+  public ServerMainUserServiceImp(ServerState s) {
     this.serverState = s;
-    this.distLedgerService = dls;
   }
 
     @Override
@@ -109,27 +103,28 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       else {
         serverState.debug("User id is valid.");
 
-        // check if server timestamp is higher than the one received
-        List<Integer> ts = distLedgerService.getTS();
-        for (int i = 0; i < ts.size(); i++) {
-          if (ts.get(i) < request.getPrevTS(i)) {
-            serverState.debug("Client has higher timestamp.");
-            responseObserver.onError(FAILED_PRECONDITION.withDescription("Server has lower timestamp").asRuntimeException());
-            return;
-          }
-        }
-
         try {
+          // check if server timestamp is higher than the one received
+          List<Integer> ts = serverState.getTS();
+          for (int i = 0; i < ts.size(); i++) {
+            if (ts.get(i) < request.getPrevTS(i)) {
+              serverState.createAddAccount(id, false, ts, request.getPrevTSList(), false);
+              serverState.debug("Client has higher timestamp, added unstable op to ledger.");
+            
+              return;
+            }
+          }
+
           // do create account and check for errors
           serverState.debug("Checking if server is active and then if account already exists...");
-          serverState.createAddAccount(id, false);
-          distLedgerService.updateTS();
+          serverState.createAddAccount(id, false, ts, request.getPrevTSList(), true);
+          serverState.updateTS();
 
           serverState.debug("Server is active and account doesn't exist.");
           serverState.debug("Creating account for user.");
 
           // setup response and propagate to secondary server
-          CreateAccountResponse response = CreateAccountResponse.newBuilder().addAllTS(distLedgerService.getTS()).build();
+          CreateAccountResponse response = CreateAccountResponse.newBuilder().addAllTS(serverState.getTS()).build();
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
@@ -227,27 +222,28 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       else{
         serverState.debug("User ids are valid.");
 
-        // check if server timestamp is higher than the one received
-        List<Integer> ts = distLedgerService.getTS();
-        for (int i = 0; i < ts.size(); i++) {
-          if (ts.get(i) < request.getPrevTS(i)) {
-            serverState.debug("Client has higher timestamp.");
-            responseObserver.onError(FAILED_PRECONDITION.withDescription("Server has lower timestamp").asRuntimeException());
-            return;
-          }
-        }
-
         try {
+          // check if server timestamp is higher than the one received
+          List<Integer> ts = serverState.getTS();
+          for (int i = 0; i < ts.size(); i++) {
+            if (ts.get(i) < request.getPrevTS(i)) {
+              serverState.debug("Client has higher timestamp, added unstable op to ledger.");
+              serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), false);
+
+              return;
+            }
+          }
+
           // able to propagate, do transferTo operation and check for errors
-          serverState.transferTo(from, to, amount, false);
+          serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), true);
           serverState.debug("Checking if server is active and then if transfer is valid...");
-          distLedgerService.updateTS();
+          serverState.updateTS();
           
           serverState.debug("Server is active and transfer is valid.");
           serverState.debug("Transferring money.");
           
           // set response and propagate with ledgerstate operations
-          TransferToResponse response = TransferToResponse.newBuilder().addAllTS(distLedgerService.getTS()).build();
+          TransferToResponse response = TransferToResponse.newBuilder().addAllTS(serverState.getTS()).build();
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         } 
