@@ -116,25 +116,19 @@ public class ServerState {
     }
 
     // operação de escrita
-    public int createAddAccount(String id, Boolean isPropagating, List<Integer> TS, List<Integer> PrevTS, Boolean stable) throws ServerNotActiveException, SecondaryServerException, AccountAlreadyExistsException {
+    public int createAddAccount(String id, Boolean isPropagating, List<Integer> TS, List<Integer> PrevTS, Boolean stable, Boolean existingOperation) throws ServerNotActiveException, SecondaryServerException, AccountAlreadyExistsException {
         // if server is not active, don't perform operation
         if(is_active == false)
             throw new ServerNotActiveException();
 
+        if (!existingOperation)
+            addOperation(new CreateOp(id, TS, PrevTS, stable));
         if(stable) {
             Account newAccount = new Account(id);
-
-            // check if addOperation is valid and add it to ledger
-            if (addAccount(newAccount) != -1){
-                addOperation(new CreateOp(id, TS, PrevTS, stable));
-                return 0;
-            }
+            addAccount(newAccount);
+            return 0;
         }
         else if(!stable) {
-            Operation op = new CreateOp(id, TS, PrevTS, stable);
-            op.setUnstable();
-
-            addOperation(op);
             return 0;
         }
 
@@ -173,7 +167,7 @@ public class ServerState {
     }*/
 
     // operação de escrita 
-    public int transferTo(String from_id, String to_id, int amount, Boolean isPropagating, List<Integer> TS, List<Integer> PrevTS, Boolean stable) throws ServerNotActiveException, SecondaryServerException, 
+    public int transferTo(String from_id, String to_id, int amount, Boolean isPropagating, List<Integer> TS, List<Integer> PrevTS, Boolean stable, Boolean existingOperation) throws ServerNotActiveException, SecondaryServerException, 
     TransferToAndFromSameAccountException, AccountDoesNotExistException, InvalidAmountException, InvalidTransferOperationException {
 
         // if server's not active, don't perform operation
@@ -207,13 +201,14 @@ public class ServerState {
         synchronized (this){   
             // if transfer operation is valid, add it to ledger
             if (from.transferTo(to, amount) != -1 && stable){
-                addOperation(new TransferOp(from.getName(), to.getName(), amount, TS, PrevTS, stable));
+                if (!existingOperation)
+                    addOperation(new TransferOp(from.getName(), to.getName(), amount, TS, PrevTS, stable));
                 return 0;
             }
             else if(from.transferTo(to, amount) != -1 && !stable){
-                Operation op = new TransferOp(from.getName(), to.getName(), amount, TS, PrevTS, stable);
-                op.setUnstable();
-                addOperation(op);
+                if (!existingOperation)
+                    addOperation(new TransferOp(from.getName(), to.getName(), amount, TS, PrevTS, stable));
+                to.transferTo(from, amount);
                 return 0;
             }
 
@@ -232,52 +227,83 @@ public class ServerState {
             TS.set(2, replicaTS.get(2));
         }
 
-        List<Operation> temp = newLedger;
-        Operation parentOp;
+        Operation newLedgerOp;
+        Operation op;
 
-        // do each operation from state's ledger
-        for (int i = 0; i < temp.size(); i++) {
-            parentOp = temp.get(i);
-            for (int j = 0; j < ledger.size(); j++) {
-                if (parentOp.equals(ledger.get(j))) {
-                    temp.remove(i);
-                    i--;
-                    break;
+        // add to ledger and if stable, do operation
+        Integer size = ledger.size();
+        Integer newSize = newLedger.size();
+        for (int i = 0; i < newSize; i++) {
+            newLedgerOp = newLedger.get(i);
+            for (int j = 0; j < size; j++) {
+                op = ledger.get(j);
+                if (newLedgerOp instanceof CreateOp && op instanceof CreateOp) {
+                    CreateOp newCreateOp = (CreateOp) newLedgerOp;
+                    CreateOp createOp = (CreateOp) op;
+                    if (newCreateOp.getAccount().equals(createOp.getAccount()) && newCreateOp.getPrevTS().equals(createOp.getPrevTS())) {
+                        break;
+                    }
+                }
+                else if (newLedgerOp instanceof TransferOp && op instanceof TransferOp) {
+                    TransferOp newTransferOp = (TransferOp) newLedgerOp;
+                    TransferOp transferOp = (TransferOp) op;
+                    if (newTransferOp.getAccount().equals(transferOp.getAccount()) && newTransferOp.getDestAccount().equals(transferOp.getDestAccount()) && newTransferOp.getAmount() == transferOp.getAmount() && newTransferOp.getPrevTS().equals(transferOp.getPrevTS())) {
+                        break;
+                    }
+                }
+                if (j == size - 1) {
+                    Boolean stable = true;
+                    if (TS.get(0) < newLedgerOp.getPrevTS().get(0) || TS.get(1) < newLedgerOp.getPrevTS().get(1) || TS.get(2) < newLedgerOp.getPrevTS().get(2)) {
+                        stable = false;
+                    }
+                    // do operation and add it to ledger
+                    if (newLedgerOp instanceof TransferOp){
+                        TransferOp transferOp = (TransferOp) newLedgerOp;
+                        try {
+                            transferTo(transferOp.getAccount(), transferOp.getDestAccount(), transferOp.getAmount(), true, transferOp.getTS(), transferOp.getPrevTS(), stable, false);
+                        } catch (Exception e) {
+                            throw new SecondaryServerNotActiveException();
+                        }
+                    }
+                    else if (newLedgerOp instanceof CreateOp){
+                        CreateOp createOp = (CreateOp) newLedgerOp;
+                        try {
+                            createAddAccount(createOp.getAccount(), true, createOp.getTS(), createOp.getPrevTS(), stable, false);
+                        } catch (Exception e) {
+                            throw new SecondaryServerNotActiveException();
+                        }
+                    }
+                }
+            }
+        }
+        // look through ledger and do unstable operations that are now stable
+        for (int i = 0; i < ledger.size(); i++) {
+            op = ledger.get(i);
+            if (!op.isStable()) {
+                if (TS.get(0) >= op.getPrevTS().get(0) && TS.get(1) >= op.getPrevTS().get(1) && TS.get(2) >= op.getPrevTS().get(2)) {
+                    if (op instanceof TransferOp){
+                        TransferOp transferOp = (TransferOp) op;
+                        try {
+                            transferOp.setStable();
+                            transferTo(transferOp.getAccount(), transferOp.getDestAccount(), transferOp.getAmount(), true, transferOp.getTS(), transferOp.getPrevTS(), transferOp.isStable(), true);
+                        } catch (Exception e) {
+                            throw new SecondaryServerNotActiveException();
+                        }
+                    }
+                    else if (op instanceof CreateOp){
+                        CreateOp createOp = (CreateOp) op;
+                        try {
+                            createOp.setStable();
+                            createAddAccount(createOp.getAccount(), true, createOp.getTS(), createOp.getPrevTS(), createOp.isStable(), true);
+                        } catch (Exception e) {
+                            throw new SecondaryServerNotActiveException();
+                        }
+                    }
                 }
             }
         }
 
-        // do each operation from state's ledger
-        /*for (int i = 0; i < temp.size(); i++) {
-            parentOp = temp.get(i);
-            // do operation and add it to ledger
-            if (parentOp instanceof TransferOp){
-                TransferOp op = (TransferOp) parentOp;
-                try {
-                    transferTo(op.getAccount(), op.getDestAccount(), op.getAmount(), true, op.getTS(), op.getPrevTS(), op.isStable()); 
-                } catch (Exception e) {
-                    throw new SecondaryServerNotActiveException();
-                }
-            }
-            else if (parentOp instanceof CreateOp){
-                CreateOp op = (CreateOp) parentOp;
-                try {
-                    createAddAccount(op.getAccount(), true, op.getTS(), op.getPrevTS(), op.isStable());
-                } catch (Exception e) {
-                    throw new SecondaryServerNotActiveException();
-                }
-            }*/
-            /*else if (parentOp instanceof DeleteOp){
-                DeleteOp op = (DeleteOp) parentOp;
-                try {
-                    deleteAccount(op.getAccount(), true);
-                } catch (Exception e) {
-                    throw new SecondaryServerNotActiveException();
-                }
-            }*/
-            
-        }
-        return 0;
+        return 0;   
     }
 
     public void debug(String message) {

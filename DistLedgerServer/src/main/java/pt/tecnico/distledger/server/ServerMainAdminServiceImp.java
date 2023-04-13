@@ -122,16 +122,16 @@ public class ServerMainAdminServiceImp extends AdminServiceGrpc.AdminServiceImpl
         // check each type of operation
         if(op instanceof TransferOp) {
           TransferOp transferOp = (TransferOp) op;
-          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(transferOp.getAccount()).setDestUserId(transferOp.getDestAccount()).setAmount(transferOp.getAmount()).build();
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(transferOp.getAccount()).setDestUserId(transferOp.getDestAccount()).setAmount(transferOp.getAmount()).addAllPrevTS(transferOp.getPrevTS()).addAllTS(transferOp.getTS()).build();
         }
         else if(op instanceof CreateOp) {
           CreateOp createOp = (CreateOp) op;
-          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(createOp.getAccount()).build();
+          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(createOp.getAccount()).addAllPrevTS(createOp.getPrevTS()).addAllTS(createOp.getTS()).build();
         }
-        else if(op instanceof DeleteOp) {
+        /*else if(op instanceof DeleteOp) {
           DeleteOp deleteOp = (DeleteOp) op;
           newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(deleteOp.getAccount()).build();
-        }
+        }*/
         else {
           newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_UNSPECIFIED).build();
         }

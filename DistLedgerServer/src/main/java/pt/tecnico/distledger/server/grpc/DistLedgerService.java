@@ -18,7 +18,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-
+import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.exception.SecondaryServerNotActiveException;
 
 public class DistLedgerService {
@@ -27,16 +27,12 @@ public class DistLedgerService {
     public static char qualificator;
     public static String hostname;
     public static ManagedChannel channel;
-    static int timestampIndex;
-    public static List<Integer> TS;
+    private ServerState serverState;
     static NamingServiceGrpc.NamingServiceBlockingStub stub;
     private static final boolean DEBUG_FLAG = (System.getProperty("debug") != null);
 
-    public DistLedgerService(String host, char q) {
-        TS = new ArrayList<Integer>();
-        TS.add(0);
-        TS.add(0);
-        TS.add(0);
+    public DistLedgerService(String host, char q, ServerState state) {
+        this.serverState = state;
         // setup host name and port for naming server access
         target = host + ":5001";
         hostname = host;
@@ -47,20 +43,12 @@ public class DistLedgerService {
         // create stub
         stub = NamingServiceGrpc.newBlockingStub(channel);
     }
-
-    public List<Integer> getTS() {
-        return TS;
-    }
-
-    public void updateTS() {
-        TS.set(timestampIndex, TS.get(timestampIndex) + 1);
-    }
     
     public void Register(char server, String port) {
         try {
             RegisterRequest request = RegisterRequest.newBuilder().setQualificator(String.valueOf(server)).setServerAddress(port).setServiceName("DistLedger").build();
             RegisterResponse response = stub.register(request);
-            timestampIndex = response.getTimestampId();
+            serverState.setTimestampIndex(response.getTimestampId());
         }
         catch (StatusRuntimeException e) {
             System.out.println("ERROR\n" + e.getStatus().getDescription());
@@ -94,20 +82,22 @@ public class DistLedgerService {
             // call lookup to find host and port for DistLedger service
             LookupRequest lookupRequest = LookupRequest.newBuilder().setQualificator(qualificator).setServiceName("DistLedger").build();
             LookupResponse lookupResponse = stub.lookup(lookupRequest);
-
-            // find and set target to propagate to
-            String targetPropagate = hostname + ":" + lookupResponse.getServerAddress(0);
-
-            // setup channel and stub to propagate to
-            ManagedChannel channelPropagate = ManagedChannelBuilder.forTarget(targetPropagate).usePlaintext().build();
-            DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stubPropagate = DistLedgerCrossServerServiceGrpc.newBlockingStub(channelPropagate);
             
-            // call propagate service with created stub
-            PropagateStateRequest request = PropagateStateRequest.newBuilder().setState(state).build();
-            PropagateStateResponse response = stubPropagate.propagateState(request);
+            if(lookupResponse.getServerAddressCount() != 0) {
+                // find and set target to propagate to
+                String targetPropagate = hostname + ":" + lookupResponse.getServerAddress(0);
 
-            // close channel
-            channelPropagate.shutdown();
+                // setup channel and stub to propagate to
+                ManagedChannel channelPropagate = ManagedChannelBuilder.forTarget(targetPropagate).usePlaintext().build();
+                DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stubPropagate = DistLedgerCrossServerServiceGrpc.newBlockingStub(channelPropagate);
+                
+                // call propagate service with created stub
+                PropagateStateRequest request = PropagateStateRequest.newBuilder().setState(state).addAllReplicaTS(serverState.getTS()).build();
+                PropagateStateResponse response = stubPropagate.propagateState(request);
+
+                // close channel
+                channelPropagate.shutdown();
+            }
         }
         catch (StatusRuntimeException e) {
             System.out.println("ERROR\n" + e.getStatus().getDescription());

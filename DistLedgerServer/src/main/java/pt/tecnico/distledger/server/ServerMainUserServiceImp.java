@@ -104,27 +104,25 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         serverState.debug("User id is valid.");
 
         try {
+          serverState.debug("Checking if server is active and then if account already exists...");
           // check if server timestamp is higher than the one received
           List<Integer> ts = serverState.getTS();
-          for (int i = 0; i < ts.size(); i++) {
-            if (ts.get(i) < request.getPrevTS(i)) {
-              serverState.createAddAccount(id, false, ts, request.getPrevTSList(), false);
-              serverState.debug("Client has higher timestamp, added unstable op to ledger.");
-            
-              return;
-            }
+          CreateAccountResponse response;
+          if (ts.get(0) < request.getPrevTS(0) || ts.get(1) < request.getPrevTS(1) || ts.get(2) < request.getPrevTS(2)) {
+            serverState.createAddAccount(id, false, ts, request.getPrevTSList(), false, false);
+            serverState.debug("Server is active and account doesn't exist.");
+            serverState.debug("Creating account for user.");
+            serverState.debug("Client has higher timestamp, added unstable op to ledger.");
+            response = CreateAccountResponse.newBuilder().addAllTS(request.getPrevTSList()).build();
           }
-
-          // do create account and check for errors
-          serverState.debug("Checking if server is active and then if account already exists...");
-          serverState.createAddAccount(id, false, ts, request.getPrevTSList(), true);
-          serverState.updateTS();
-
-          serverState.debug("Server is active and account doesn't exist.");
-          serverState.debug("Creating account for user.");
-
+          else {
+            serverState.createAddAccount(id, false, ts, request.getPrevTSList(), true, false);
+            serverState.debug("Server is active and account doesn't exist.");
+            serverState.debug("Creating account for user.");
+            serverState.updateTS();
+            response = CreateAccountResponse.newBuilder().addAllTS(serverState.getTS()).build();
+          }
           // setup response and propagate to secondary server
-          CreateAccountResponse response = CreateAccountResponse.newBuilder().addAllTS(serverState.getTS()).build();
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
@@ -223,27 +221,23 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         serverState.debug("User ids are valid.");
 
         try {
+          serverState.debug("Checking if server is active and then if transfer is valid...");
           // check if server timestamp is higher than the one received
           List<Integer> ts = serverState.getTS();
-          for (int i = 0; i < ts.size(); i++) {
-            if (ts.get(i) < request.getPrevTS(i)) {
-              serverState.debug("Client has higher timestamp, added unstable op to ledger.");
-              serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), false);
-
-              return;
-            }
+          TransferToResponse response;
+          if (ts.get(0) < request.getPrevTS(0) || ts.get(1) < request.getPrevTS(1) || ts.get(2) < request.getPrevTS(2)) {
+            serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), false, false);
+            serverState.debug("Server is active and transfer is valid.");
+            serverState.debug("Client has higher timestamp, added unstable op to ledger.");
+            response = TransferToResponse.newBuilder().addAllTS(request.getPrevTSList()).build();
           }
-
-          // able to propagate, do transferTo operation and check for errors
-          serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), true);
-          serverState.debug("Checking if server is active and then if transfer is valid...");
-          serverState.updateTS();
-          
-          serverState.debug("Server is active and transfer is valid.");
-          serverState.debug("Transferring money.");
-          
+          else {
+            serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), true, false);
+            serverState.debug("Server is active and transfer is valid.");
+            serverState.updateTS();
+            response = TransferToResponse.newBuilder().addAllTS(serverState.getTS()).build();
+          }
           // set response and propagate with ledgerstate operations
-          TransferToResponse response = TransferToResponse.newBuilder().addAllTS(serverState.getTS()).build();
           responseObserver.onNext(response);
           responseObserver.onCompleted();
         } 
@@ -277,43 +271,5 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
         }
 
       }
-    }
-
-    /*
-     * makeLedgerState is a function that returns a LedgerState, a list
-     * of ledger operations converted from disledgerserver.domain.Operation
-     * type to proto's Operation type to be set in the service response
-     */
-    public DistLedgerCommonDefinitions.LedgerState makeLedgerState() {
-      // get LedgerState
-      List<Operation> ledgerOps = serverState.getLedgerState();
-      List<DistLedgerCommonDefinitions.Operation> convertedOps = new ArrayList<>();
-
-      // for each operation in LedgerState, convert it to Operation type
-      for(int i = 0; i < ledgerOps.size(); i++) {
-        Operation op = ledgerOps.get(i);
-        DistLedgerCommonDefinitions.Operation newOp;
-  
-        // check each type of operation
-        if(op instanceof TransferOp) {
-          TransferOp transferOp = (TransferOp) op;
-          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(transferOp.getAccount()).setDestUserId(transferOp.getDestAccount()).setAmount(transferOp.getAmount()).build();
-        }
-        else if(op instanceof CreateOp) {
-          CreateOp createOp = (CreateOp) op;
-          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(createOp.getAccount()).build();
-        }
-        else if(op instanceof DeleteOp) {
-          DeleteOp deleteOp = (DeleteOp) op;
-          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(deleteOp.getAccount()).build();
-        }
-        else {
-          newOp = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_UNSPECIFIED).build();
-        }
-  
-        convertedOps.add(newOp);
-      }
-      // return LedgerState, list of proto's Operation
-      return DistLedgerCommonDefinitions.LedgerState.newBuilder().addAllLedger(convertedOps).build();
     }
 }
