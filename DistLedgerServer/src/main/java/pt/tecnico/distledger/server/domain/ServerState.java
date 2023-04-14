@@ -171,47 +171,46 @@ public class ServerState {
     TransferToAndFromSameAccountException, AccountDoesNotExistException, InvalidAmountException, InvalidTransferOperationException {
 
         // if server's not active, don't perform operation
-        if (is_active == false){
+        if (is_active == false && stable){
             throw new ServerNotActiveException();
         }
 
         // check if trying to transfer to and from the same account
-        if (from_id.equals(to_id)){
+        if (from_id.equals(to_id) && stable){
             throw new TransferToAndFromSameAccountException(to_id);
         }
 
         // check if amount to transfer is valid
-        if (amount <= 0){
+        if (amount <= 0 && stable){
             throw new InvalidAmountException(amount);
         }
 
         // check if source account is valid
         Account from = getAccountsMap().get(from_id);
-        if (from == null){
+        if (from == null && stable){
             throw new AccountDoesNotExistException(from_id);
         }
 
         // check if dest account is valid
         Account to = getAccountsMap().get(to_id);
-        if (to == null){
+        if (to == null && stable){
             throw new AccountDoesNotExistException(to_id);
         }
 
         // do transferTo operation
         synchronized (this){   
             // if transfer operation is valid, add it to ledger
-            if (from.transferTo(to, amount) != -1 && stable){
+            if(!stable){
+                if (!existingOperation)
+                    addOperation(new TransferOp(from_id, to_id, amount, TS, PrevTS, stable));
+                
+                return 0;
+            }
+            else if (from.transferTo(to, amount) != -1 && stable){
                 if (!existingOperation)
                     addOperation(new TransferOp(from.getName(), to.getName(), amount, TS, PrevTS, stable));
                 return 0;
             }
-            else if(from.transferTo(to, amount) != -1 && !stable){
-                if (!existingOperation)
-                    addOperation(new TransferOp(from.getName(), to.getName(), amount, TS, PrevTS, stable));
-                to.transferTo(from, amount);
-                return 0;
-            }
-
             throw new InvalidTransferOperationException();
         }
     }

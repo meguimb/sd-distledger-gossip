@@ -210,66 +210,66 @@ public class ServerMainUserServiceImp extends UserServiceGrpc.UserServiceImplBas
       int amount = request.getAmount();
 
       serverState.info("Transfer request received of " + amount + " from " + from + " to " + to + ".");
-      serverState.debug("Checking if user ids are valid...");
+      
+      try {
+        serverState.debug("Checking if server is active and then if transfer is valid...");
+        // check if server timestamp is higher than the one received
+        List<Integer> ts = serverState.getTS();
+        TransferToResponse response;
 
-      // check for invalid arguments in the request
-      if (from == null || to == null){
-        serverState.debug("User ids are invalid.");
-        responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to transfer.").asRuntimeException());
+        if (ts.get(0) < request.getPrevTS(0) || ts.get(1) < request.getPrevTS(1) || ts.get(2) < request.getPrevTS(2)) {
+          serverState.info("not stable"); //erase
+          serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), false, false);
+          serverState.debug("Server is active.");
+          serverState.debug("Client has higher timestamp, added unstable op to ledger.");
+          response = TransferToResponse.newBuilder().addAllTS(request.getPrevTSList()).build();
+        }
+        else {
+          serverState.debug("Checking if user ids are valid...");
+
+          // check for invalid arguments in the request
+          if (from == null || to == null){
+            serverState.debug("User ids are invalid.");
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid id given to transfer.").asRuntimeException());
+            return;
+          }
+
+        serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), true, false);
+        serverState.debug("Server is active and transfer is valid.");
+        serverState.updateTS();
+        response = TransferToResponse.newBuilder().addAllTS(serverState.getTS()).build();
+        }
+        // set response and propagate with ledgerstate operations
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+      } 
+      catch (InvalidTransferOperationException e) {
+        serverState.debug("Server is active but transfer is invalid, attempted to transfer more money than the account has.");
+        responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
+      } 
+      catch (ServerNotActiveException e) {
+        serverState.debug("Server is not active.");
+        responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
       }
-      else{
-        serverState.debug("User ids are valid.");
-
-        try {
-          serverState.debug("Checking if server is active and then if transfer is valid...");
-          // check if server timestamp is higher than the one received
-          List<Integer> ts = serverState.getTS();
-          TransferToResponse response;
-          if (ts.get(0) < request.getPrevTS(0) || ts.get(1) < request.getPrevTS(1) || ts.get(2) < request.getPrevTS(2)) {
-            serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), false, false);
-            serverState.debug("Server is active and transfer is valid.");
-            serverState.debug("Client has higher timestamp, added unstable op to ledger.");
-            response = TransferToResponse.newBuilder().addAllTS(request.getPrevTSList()).build();
-          }
-          else {
-            serverState.transferTo(from, to, amount, false, ts, request.getPrevTSList(), true, false);
-            serverState.debug("Server is active and transfer is valid.");
-            serverState.updateTS();
-            response = TransferToResponse.newBuilder().addAllTS(serverState.getTS()).build();
-          }
-          // set response and propagate with ledgerstate operations
-          responseObserver.onNext(response);
-          responseObserver.onCompleted();
-        } 
-        catch (InvalidTransferOperationException e) {
-          serverState.debug("Server is active but transfer is invalid, attempted to transfer more money than the account has.");
-          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-        } 
-        catch (ServerNotActiveException e) {
-          serverState.debug("Server is not active.");
-          responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-        }
-        catch (TransferToAndFromSameAccountException e) {
-          serverState.debug("Server is active but transfer is invalid, attempted to transfer to and from the same account.");
-          responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
-        }
-        catch (InvalidAmountException e) {
-          serverState.debug("Server is active but transfer is invalid, attempted to transfer an invalid amount.");
-          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException()); 
-        }
-        catch (AccountDoesNotExistException e) {
-          serverState.debug("Server is active but transfer is invalid, attempted to transfer to or from an account that doesn't exist.");
-          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-        }
-        catch (SecondaryServerException e) {
-          serverState.debug("Secondary server cannot perform transferTo operation.");
-          responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-        }
-        catch (Exception e) {
-          serverState.debug("Unknown error occurred.");
-          responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
-        }
-
+      catch (TransferToAndFromSameAccountException e) {
+        serverState.debug("Server is active but transfer is invalid, attempted to transfer to and from the same account.");
+        responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+      }
+      catch (InvalidAmountException e) {
+        serverState.debug("Server is active but transfer is invalid, attempted to transfer an invalid amount.");
+        responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException()); 
+      }
+      catch (AccountDoesNotExistException e) {
+        serverState.debug("Server is active but transfer is invalid, attempted to transfer to or from an account that doesn't exist.");
+        responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
+      }
+      catch (SecondaryServerException e) {
+        serverState.debug("Secondary server cannot perform transferTo operation.");
+        responseObserver.onError(FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
+      }
+      catch (Exception e) {
+        serverState.debug("Unknown error occurred.");
+        responseObserver.onError(UNKNOWN.withDescription("Unknown error.").asRuntimeException());
       }
     }
 }
