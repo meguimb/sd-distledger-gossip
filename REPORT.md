@@ -1,6 +1,6 @@
-#Relatório A19 - Entrega 3
+# Relatório A19 - Entrega 3
 
-    Para adotar a arquitetura gossip neste projeto começámos por implementar _vector clocks_ através da adição de um
+    Para adotar a arquitetura gossip neste projeto começámos por implementar *vector* *clocks* através da adição de um
 time stamp vetorial aos servidores e clientes. Assim, quando o cliente faz um pedido a um servidor, envia o seu
 TS (time stamp) associado; se este for menor ou igual ao TS do servidor a que é feito esse pedido a operação é
 efetuada, avançando-se o TS do servidor por uma unidade e enviando-se esse TS atualizado ao cliente para este
